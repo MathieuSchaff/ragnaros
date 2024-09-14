@@ -9,13 +9,17 @@ import (
 	"time"
 )
 
-const sampleInterval = time.Second
+const (
+	sampleInterval = time.Second
+	historySize    = 120 // two minutes at one sample per second
+)
 
 func runWatch() error {
 	collector, err := newCollector()
 	if err != nil {
 		return err
 	}
+	recent := newHistory(historySize)
 
 	// Ctrl+C (SIGINT) or SIGTERM is delivered on this channel instead of killing the program.
 	stop := make(chan os.Signal, 1)
@@ -36,6 +40,7 @@ func runWatch() error {
 			if err != nil {
 				return err
 			}
+			recent.add(s)
 			printSample(os.Stdout, s)
 		}
 	}
