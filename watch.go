@@ -12,6 +12,9 @@ import (
 const (
 	sampleInterval = time.Second
 	historySize    = 120 // two minutes at one sample per second
+	cpuThreshold   = 90.0
+	spikeSamples   = 5
+	incidentDir    = "incidents"
 )
 
 func runWatch() error {
@@ -20,6 +23,7 @@ func runWatch() error {
 		return err
 	}
 	recent := newHistory(historySize)
+	spikes := newDetector(cpuThreshold, spikeSamples)
 
 	// Ctrl+C (SIGINT) or SIGTERM is delivered on this channel instead of killing the program.
 	stop := make(chan os.Signal, 1)
@@ -40,8 +44,14 @@ func runWatch() error {
 			if err != nil {
 				return err
 			}
-			recent.add(s)
 			printSample(os.Stdout, s)
+			path, err := recordSample(recent, spikes, s, incidentDir)
+			if err != nil {
+				// Keep watching: a failed save must not stop the monitoring.
+				fmt.Fprintln(os.Stderr, "ragnaros: cannot save incident:", err)
+			} else if path != "" {
+				fmt.Println("Incident saved:", path)
+			}
 		}
 	}
 }
