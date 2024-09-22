@@ -15,6 +15,7 @@ type processSummary struct {
 	pid         int
 	name        string
 	appearances int
+	totalCPU    float64 // sum of the per-second percentages
 	maxCPU      float64
 }
 
@@ -91,23 +92,22 @@ func addAppearances(summaries map[int]*processSummary, usages []processUsage) {
 			summaries[usage.PID] = summary
 		}
 		summary.appearances++
+		summary.totalCPU += usage.CPUPercent
 		if usage.CPUPercent > summary.maxCPU {
 			summary.maxCPU = usage.CPUPercent
 		}
 	}
 }
 
-// rankProcesses sorts by number of appearances, then by peak usage.
+// rankProcesses sorts by CPU used over the whole period, so a short but heavy
+// process ranks above a light one that is always present.
 func rankProcesses(summaries map[int]*processSummary, limit int) []processSummary {
 	var ranked []processSummary
 	for _, summary := range summaries {
 		ranked = append(ranked, *summary)
 	}
 	sort.Slice(ranked, func(i, j int) bool {
-		if ranked[i].appearances != ranked[j].appearances {
-			return ranked[i].appearances > ranked[j].appearances
-		}
-		return ranked[i].maxCPU > ranked[j].maxCPU
+		return ranked[i].totalCPU > ranked[j].totalCPU
 	})
 	if len(ranked) > limit {
 		ranked = ranked[:limit]
@@ -117,12 +117,12 @@ func rankProcesses(summaries map[int]*processSummary, limit int) []processSummar
 
 func printReport(w io.Writer, r incidentReport) {
 	const timeLayout = "2006-01-02 15:04:05"
-	fmt.Fprintf(w, "Period:            %s -> %s (%s, %d samples)\n",
+	fmt.Fprintf(w, "Period:           %s -> %s (%s, %d samples)\n",
 		r.start.Format(timeLayout), r.end.Format(timeLayout), r.end.Sub(r.start).Round(time.Second), r.sampleCount)
-	fmt.Fprintf(w, "CPU peak:          %.1f %% at %s\n", r.peakCPU, r.peakCPUTime.Format("15:04:05"))
-	fmt.Fprintf(w, "Lowest available memory: %s at %s\n", formatKB(r.minMemKB), r.minMemTime.Format("15:04:05"))
+	fmt.Fprintf(w, "CPU peak:         %.1f %% at %s\n", r.peakCPU, r.peakCPUTime.Format("15:04:05"))
+	fmt.Fprintf(w, "Lowest memory:    %s available at %s\n", formatKB(r.minMemKB), r.minMemTime.Format("15:04:05"))
 
-	fmt.Fprintf(w, "\nMost active processes (times seen in the top %d of each sample):\n", topProcessCount)
+	fmt.Fprintf(w, "\nMost active processes (ranked by CPU used, SEEN = times in the top %d):\n", topProcessCount)
 	fmt.Fprintf(w, "  %7s  %-16s %9s  %8s\n", "PID", "NAME", "SEEN", "MAX CPU")
 	for _, p := range r.topProcesses {
 		seen := fmt.Sprintf("%d/%d", p.appearances, r.sampleCount)

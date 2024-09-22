@@ -39,12 +39,24 @@ func TestBuildReport(t *testing.T) {
 	if len(report.topProcesses) != 2 {
 		t.Fatalf("got %d processes, want 2", len(report.topProcesses))
 	}
+	// backup used 730 % in total, browser 430 %.
 	first, second := report.topProcesses[0], report.topProcesses[1]
 	if first.name != "backup" || first.appearances != 3 || first.maxCPU != 350 {
 		t.Errorf("first = %+v", first)
 	}
 	if second.name != "browser" || second.appearances != 2 || second.maxCPU != 400 {
 		t.Errorf("second = %+v", second)
+	}
+}
+
+func TestBuildReportRanksHeavyProcessFirst(t *testing.T) {
+	samples := []sample{
+		{TopProcesses: []processUsage{{PID: 1, Name: "light", CPUPercent: 10}}},
+		{TopProcesses: []processUsage{{PID: 1, Name: "light", CPUPercent: 10}, {PID: 2, Name: "heavy", CPUPercent: 900}}},
+	}
+	report, _ := buildReport(samples)
+	if report.topProcesses[0].name != "heavy" {
+		t.Errorf("first = %+v, want heavy despite fewer appearances", report.topProcesses[0])
 	}
 }
 
