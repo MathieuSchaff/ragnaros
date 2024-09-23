@@ -26,6 +26,8 @@ type incidentReport struct {
 	peakCPUTime  time.Time
 	minMemKB     uint64
 	minMemTime   time.Time
+	peakTemp     float64 // 0 when the incident has no temperature
+	peakTempTime time.Time
 	topProcesses []processSummary
 }
 
@@ -75,6 +77,10 @@ func buildReport(samples []sample) (incidentReport, error) {
 			report.minMemKB = s.MemAvailableKB
 			report.minMemTime = s.Time
 		}
+		if s.TempCelsius > report.peakTemp {
+			report.peakTemp = s.TempCelsius
+			report.peakTempTime = s.Time
+		}
 		addAppearances(summaries, s.TopProcesses)
 	}
 
@@ -121,6 +127,11 @@ func printReport(w io.Writer, r incidentReport) {
 		r.start.Format(timeLayout), r.end.Format(timeLayout), r.end.Sub(r.start).Round(time.Second), r.sampleCount)
 	fmt.Fprintf(w, "CPU peak:         %.1f %% at %s\n", r.peakCPU, r.peakCPUTime.Format("15:04:05"))
 	fmt.Fprintf(w, "Lowest memory:    %s available at %s\n", formatKB(r.minMemKB), r.minMemTime.Format("15:04:05"))
+	if r.peakTemp > 0 {
+		fmt.Fprintf(w, "Max temperature:  %.0f °C at %s\n", r.peakTemp, r.peakTempTime.Format("15:04:05"))
+	} else {
+		fmt.Fprintln(w, "Max temperature:  no sensor data")
+	}
 
 	fmt.Fprintf(w, "\nMost active processes (ranked by CPU used, SEEN = times in the top %d):\n", topProcessCount)
 	fmt.Fprintf(w, "  %7s  %-16s %9s  %8s\n", "PID", "NAME", "SEEN", "MAX CPU")

@@ -13,7 +13,7 @@ func TestBuildReport(t *testing.T) {
 			{PID: 10, Name: "backup", CPUPercent: 80},
 			{PID: 20, Name: "browser", CPUPercent: 30},
 		}},
-		{Time: start.Add(time.Second), CPUPercent: 97, MemAvailableKB: 2000, TopProcesses: []processUsage{
+		{Time: start.Add(time.Second), CPUPercent: 97, MemAvailableKB: 2000, TempCelsius: 81, TopProcesses: []processUsage{
 			{PID: 10, Name: "backup", CPUPercent: 350},
 		}},
 		{Time: start.Add(2 * time.Second), CPUPercent: 92, MemAvailableKB: 3000, TopProcesses: []processUsage{
@@ -28,6 +28,9 @@ func TestBuildReport(t *testing.T) {
 	}
 	if report.peakCPU != 97 || !report.peakCPUTime.Equal(start.Add(time.Second)) {
 		t.Errorf("peak = %v at %v", report.peakCPU, report.peakCPUTime)
+	}
+	if report.peakTemp != 81 {
+		t.Errorf("peakTemp = %v, want 81", report.peakTemp)
 	}
 	if report.minMemKB != 2000 {
 		t.Errorf("minMemKB = %d, want 2000", report.minMemKB)
