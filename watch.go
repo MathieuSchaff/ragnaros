@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -12,18 +14,48 @@ import (
 const (
 	sampleInterval = time.Second
 	historySize    = 120 // two minutes at one sample per second
-	cpuThreshold   = 90.0
-	spikeSamples   = 5
-	incidentDir    = "incidents"
 )
 
-func runWatch() error {
+type watchConfig struct {
+	threshold    float64
+	spikeSamples int
+	incidentDir  string
+}
+
+func parseWatchFlags(args []string) (watchConfig, error) {
+	var config watchConfig
+	flags := flag.NewFlagSet("watch", flag.ContinueOnError)
+	flags.Float64Var(&config.threshold, "threshold", 90, "global CPU percent above which a sample counts as high")
+	flags.IntVar(&config.spikeSamples, "samples", 5, "consecutive high samples that make an incident")
+	flags.StringVar(&config.incidentDir, "dir", "incidents", "folder where incident files are written")
+	if err := flags.Parse(args); err != nil {
+		return watchConfig{}, err
+	}
+
+	if config.threshold < 0 || config.threshold >= 100 {
+		return watchConfig{}, fmt.Errorf("-threshold must be between 0 and 100 (100 excluded)")
+	}
+	if config.spikeSamples < 1 || config.spikeSamples > historySize {
+		return watchConfig{}, fmt.Errorf("-samples must be between 1 and %d", historySize)
+	}
+	return config, nil
+}
+
+func runWatch(args []string) error {
+	config, err := parseWatchFlags(args)
+	if errors.Is(err, flag.ErrHelp) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
 	collector, err := newCollector()
 	if err != nil {
 		return err
 	}
 	recent := newHistory(historySize)
-	spikes := newDetector(cpuThreshold, spikeSamples)
+	spikes := newDetector(config.threshold, config.spikeSamples)
 
 	// Ctrl+C (SIGINT) or SIGTERM is delivered on this channel instead of killing the program.
 	stop := make(chan os.Signal, 1)
@@ -45,7 +77,7 @@ func runWatch() error {
 				return err
 			}
 			printSample(os.Stdout, s)
-			path, err := recordSample(recent, spikes, s, incidentDir)
+			path, err := recordSample(recent, spikes, s, config.incidentDir)
 			if err != nil {
 				// Keep watching: a failed save must not stop the monitoring.
 				fmt.Fprintln(os.Stderr, "ragnaros: cannot save incident:", err)

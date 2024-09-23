@@ -6,7 +6,8 @@ import (
 )
 
 const usage = `Usage:
-  ragnaros watch                     sample the machine every second, save incidents
+  ragnaros watch [-threshold 90] [-samples 5] [-dir incidents]
+                                     sample the machine every second, save incidents
   ragnaros report <incident.jsonl>   summarize a saved incident`
 
 func main() {
@@ -17,7 +18,7 @@ func main() {
 	var err error
 	switch os.Args[1] {
 	case "watch":
-		err = runWatch()
+		err = runWatch(os.Args[2:])
 	case "report":
 		if len(os.Args) != 3 {
 			exitWithUsage()
