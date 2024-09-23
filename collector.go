@@ -9,6 +9,7 @@ type sample struct {
 	Time           time.Time      `json:"time"`
 	CPUPercent     float64        `json:"cpu_percent"`
 	MemAvailableKB uint64         `json:"mem_available_kb"`
+	TempCelsius    float64        `json:"temp_celsius,omitempty"` // 0 when no sensor
 	TopProcesses   []processUsage `json:"top_processes"`
 }
 
@@ -53,6 +54,7 @@ func (c *collector) collect() (sample, error) {
 		Time:           time.Now(),
 		CPUPercent:     cpuUsage(c.previousCPU, cpu),
 		MemAvailableKB: memAvailable,
+		TempCelsius:    readMaxTemperature(thermalZonePattern),
 		TopProcesses:   topProcesses(c.previousProcesses, processes, elapsedTicks, topProcessCount),
 	}
 

@@ -57,8 +57,12 @@ func runWatch() error {
 }
 
 func printSample(w io.Writer, s sample) {
-	fmt.Fprintf(w, "\n%s  CPU %5.1f %%  available memory %s\n",
+	fmt.Fprintf(w, "\n%s  CPU %5.1f %%  available memory %s",
 		s.Time.Format("15:04:05"), s.CPUPercent, formatKB(s.MemAvailableKB))
+	if s.TempCelsius > 0 {
+		fmt.Fprintf(w, "  max temperature %.0f °C", s.TempCelsius)
+	}
+	fmt.Fprintln(w)
 	for _, p := range s.TopProcesses {
 		fmt.Fprintf(w, "  %7d  %-16s %6.1f %%\n", p.PID, p.Name, p.CPUPercent)
 	}
