@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParseProcessStat(t *testing.T) {
 	// Name with a space and a ')' to check the parsing of the name.
@@ -69,5 +72,21 @@ func TestTopProcessesLimit(t *testing.T) {
 	got := topProcesses(previous, current, 100, 5)
 	if len(got) != 5 || got[0].PID != 8 {
 		t.Errorf("got %+v, want 5 processes starting with PID 8", got)
+	}
+}
+
+func TestFormatCommand(t *testing.T) {
+	if got := formatCommand("python3\x00backup.py\x00--all\x00"); got != "python3 backup.py --all" {
+		t.Errorf("got %q", got)
+	}
+	long := formatCommand("/usr/bin/" + strings.Repeat("é", 100))
+	if len([]rune(long)) != maxCommandLength || !strings.HasSuffix(long, "...") {
+		t.Errorf("long command not cut to %d characters: %q", maxCommandLength, long)
+	}
+}
+
+func TestLabelFallsBackToName(t *testing.T) {
+	if got := (processUsage{Name: "kworker/0:1"}).label(); got != "kworker/0:1" {
+		t.Errorf("got %q", got)
 	}
 }

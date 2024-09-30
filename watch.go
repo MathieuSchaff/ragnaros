@@ -104,6 +104,6 @@ func printSample(w io.Writer, s sample) {
 	}
 	fmt.Fprintln(w)
 	for _, p := range s.TopProcesses {
-		fmt.Fprintf(w, "  %7d  %-16s %6.1f %%\n", p.PID, p.Name, p.CPUPercent)
+		fmt.Fprintf(w, "  %7d  %6.1f %%  %s\n", p.PID, p.CPUPercent, p.label())
 	}
 }

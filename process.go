@@ -28,6 +28,7 @@ type processKey struct {
 type processUsage struct {
 	PID        int     `json:"pid"`
 	Name       string  `json:"name"`
+	Command    string  `json:"command,omitempty"`
 	CPUPercent float64 `json:"cpu_percent"`
 }
 
@@ -95,6 +96,37 @@ func parseProcessStat(content string) (processStat, error) {
 		startTime: startTime,
 		ticks:     utime + stime,
 	}, nil
+}
+
+const maxCommandLength = 60
+
+// readCommand returns the full command line, which tells apart processes that
+// share a short name (for example several "python3"). It returns "" for kernel
+// threads, which have no command line, and for processes that already exited.
+func readCommand(pid int) string {
+	data, err := os.ReadFile("/proc/" + strconv.Itoa(pid) + "/cmdline")
+	if err != nil {
+		return ""
+	}
+	return formatCommand(string(data))
+}
+
+// Arguments in /proc/<pid>/cmdline are separated by NUL bytes.
+func formatCommand(cmdline string) string {
+	command := strings.TrimSpace(strings.ReplaceAll(cmdline, "\x00", " "))
+	runes := []rune(command) // cut on characters, not bytes, to keep UTF-8 valid
+	if len(runes) > maxCommandLength {
+		return string(runes[:maxCommandLength-3]) + "..."
+	}
+	return command
+}
+
+// label is what we print: the command line when known, else the short name.
+func (p processUsage) label() string {
+	if p.Command != "" {
+		return p.Command
+	}
+	return p.Name
 }
 
 func ticksByProcess(stats []processStat) map[processKey]uint64 {

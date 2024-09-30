@@ -14,6 +14,7 @@ const reportProcessCount = 5
 type processSummary struct {
 	pid         int
 	name        string
+	label       string // command line if known, else name
 	appearances int
 	totalCPU    float64 // sum of the per-second percentages
 	maxCPU      float64
@@ -97,6 +98,7 @@ func addAppearances(summaries map[int]*processSummary, usages []processUsage) {
 			summary = &processSummary{pid: usage.PID, name: usage.Name}
 			summaries[usage.PID] = summary
 		}
+		summary.label = usage.label()
 		summary.appearances++
 		summary.totalCPU += usage.CPUPercent
 		if usage.CPUPercent > summary.maxCPU {
@@ -134,10 +136,10 @@ func printReport(w io.Writer, r incidentReport) {
 	}
 
 	fmt.Fprintf(w, "\nMost active processes (ranked by CPU used, SEEN = times in the top %d):\n", topProcessCount)
-	fmt.Fprintf(w, "  %7s  %-16s %9s  %8s\n", "PID", "NAME", "SEEN", "MAX CPU")
+	fmt.Fprintf(w, "  %7s  %6s  %8s  %s\n", "PID", "SEEN", "MAX CPU", "COMMAND")
 	for _, p := range r.topProcesses {
 		seen := fmt.Sprintf("%d/%d", p.appearances, r.sampleCount)
-		fmt.Fprintf(w, "  %7d  %-16s %9s  %6.1f %%\n", p.pid, p.name, seen, p.maxCPU)
+		fmt.Fprintf(w, "  %7d  %6s  %6.1f %%  %s\n", p.pid, seen, p.maxCPU, p.label)
 	}
 
 	fmt.Fprintln(w, "\nProcess CPU: 100 % means one full core.")
