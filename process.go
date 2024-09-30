@@ -114,9 +114,10 @@ func topProcesses(previous map[processKey]uint64, current []processStat, elapsed
 
 	var usages []processUsage
 	for _, stat := range current {
-		before, seen := previous[processKey{stat.pid, stat.startTime}]
-		// A process never seen before (new, or reused PID) has no previous measure.
-		if !seen || stat.ticks <= before {
+		// A process absent from the previous reading (new, or reused PID)
+		// started since then, so all its CPU time belongs to this interval.
+		before := previous[processKey{stat.pid, stat.startTime}]
+		if stat.ticks <= before {
 			continue
 		}
 		usages = append(usages, processUsage{

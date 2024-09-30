@@ -37,19 +37,25 @@ func TestTopProcesses(t *testing.T) {
 		{pid: 1, name: "busy", startTime: 10, ticks: 250},  // 150 ticks
 		{pid: 2, name: "calm", startTime: 20, ticks: 110},  // 10 ticks
 		{pid: 3, name: "new", startTime: 31, ticks: 500},   // new process, same PID
-		{pid: 4, name: "fresh", startTime: 40, ticks: 300}, // never seen
+		{pid: 4, name: "fresh", startTime: 40, ticks: 300}, // started since last reading
 	}
 
 	got := topProcesses(previous, current, 100, 5)
 
-	if len(got) != 2 {
-		t.Fatalf("got %d processes, want 2: %+v", len(got), got)
+	// The reused PID 3 is counted from zero, not from the old process's 100 ticks.
+	want := []processUsage{
+		{PID: 3, Name: "new", CPUPercent: 500},
+		{PID: 4, Name: "fresh", CPUPercent: 300},
+		{PID: 1, Name: "busy", CPUPercent: 150},
+		{PID: 2, Name: "calm", CPUPercent: 10},
 	}
-	if got[0].Name != "busy" || got[0].CPUPercent != 150 {
-		t.Errorf("first = %+v, want busy at 150 %% (1.5 cores)", got[0])
+	if len(got) != len(want) {
+		t.Fatalf("got %+v, want %+v", got, want)
 	}
-	if got[1].Name != "calm" || got[1].CPUPercent != 10 {
-		t.Errorf("second = %+v, want calm at 10 %%", got[1])
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("rank %d = %+v, want %+v", i, got[i], want[i])
+		}
 	}
 }
 
