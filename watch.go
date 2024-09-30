@@ -69,6 +69,11 @@ func runWatch(args []string) error {
 		// Wait for whichever comes first: a stop signal or the next tick.
 		select {
 		case <-stop:
+			// The user may stop because the machine is slow: keep a spike
+			// that started but is not long enough yet to be saved.
+			if spikes.pendingSpike() {
+				printSaveResult(saveIncident(config.incidentDir, recent.all(), time.Now()))
+			}
 			fmt.Println("\nStopped.")
 			return nil
 		case <-ticker.C:
@@ -77,14 +82,17 @@ func runWatch(args []string) error {
 				return err
 			}
 			printSample(os.Stdout, s)
-			path, err := recordSample(recent, spikes, s, config.incidentDir)
-			if err != nil {
-				// Keep watching: a failed save must not stop the monitoring.
-				fmt.Fprintln(os.Stderr, "ragnaros: cannot save incident:", err)
-			} else if path != "" {
-				fmt.Println("Incident saved:", path)
-			}
+			printSaveResult(recordSample(recent, spikes, s, config.incidentDir))
 		}
+	}
+}
+
+// printSaveResult only reports: a failed save must not stop the monitoring.
+func printSaveResult(path string, err error) {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "ragnaros: cannot save incident:", err)
+	} else if path != "" {
+		fmt.Println("Incident saved:", path)
 	}
 }
 

@@ -46,3 +46,18 @@ func TestDetectorThresholdIsStrict(t *testing.T) {
 		t.Errorf("fired at %v, want none: 90 is not above 90", fired)
 	}
 }
+
+func TestDetectorPendingSpike(t *testing.T) {
+	d := newDetector(90, 5)
+	if d.pendingSpike() {
+		t.Error("pending before any sample")
+	}
+	countIncidents(d, []float64{95, 95})
+	if !d.pendingSpike() {
+		t.Error("want pending after 2 high samples")
+	}
+	countIncidents(d, []float64{95, 95, 95})
+	if d.pendingSpike() {
+		t.Error("not pending once the incident is saved")
+	}
+}

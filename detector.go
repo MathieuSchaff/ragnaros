@@ -29,3 +29,8 @@ func (d *detector) update(cpuPercent float64) bool {
 	}
 	return false
 }
+
+// pendingSpike is true when the usage is high but no incident was saved yet.
+func (d *detector) pendingSpike() bool {
+	return d.consecutive > 0 && !d.triggered
+}
