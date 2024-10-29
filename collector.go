@@ -50,7 +50,7 @@ func (c *collector) collect() (sample, error) {
 	// of cores gives the elapsed time of one core, in the same unit as process times.
 	elapsedTicks := float64(cpu.total-c.previousCPU.total) / float64(cpu.cores)
 
-	top := topProcesses(c.previousProcesses, processes, elapsedTicks, topProcessCount)
+	top := topProcesses(c.previousProcesses, processes, elapsedTicks, cpu.cores, topProcessCount)
 	// Read the command line only for the few top processes: cheaper than for all.
 	for i := range top {
 		top[i].Command = readCommand(top[i].PID)
