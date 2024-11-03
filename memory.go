@@ -7,25 +7,49 @@ import (
 	"strings"
 )
 
-func readMemAvailableKB() (uint64, error) {
+type memoryInfo struct {
+	availableKB uint64
+	swapUsedKB  uint64
+}
+
+func readMemory() (memoryInfo, error) {
 	data, err := os.ReadFile("/proc/meminfo")
 	if err != nil {
-		return 0, err
+		return memoryInfo{}, err
 	}
-	return parseMemAvailableKB(string(data))
+	return parseMemory(string(data))
 }
 
 // MemAvailable is the kernel estimate of memory usable without swapping,
 // more meaningful than MemFree which ignores reclaimable cache.
-func parseMemAvailableKB(content string) (uint64, error) {
+func parseMemory(content string) (memoryInfo, error) {
+	available, err := meminfoValueKB(content, "MemAvailable")
+	if err != nil {
+		return memoryInfo{}, err
+	}
+	swapTotal, err := meminfoValueKB(content, "SwapTotal")
+	if err != nil {
+		return memoryInfo{}, err
+	}
+	swapFree, err := meminfoValueKB(content, "SwapFree")
+	if err != nil {
+		return memoryInfo{}, err
+	}
+	if swapFree > swapTotal {
+		swapFree = swapTotal
+	}
+	return memoryInfo{availableKB: available, swapUsedKB: swapTotal - swapFree}, nil
+}
+
+func meminfoValueKB(content, key string) (uint64, error) {
 	for _, line := range strings.Split(content, "\n") {
 		fields := strings.Fields(line)
-		if len(fields) < 2 || fields[0] != "MemAvailable:" {
+		if len(fields) < 2 || fields[0] != key+":" {
 			continue
 		}
 		return strconv.ParseUint(fields[1], 10, 64)
 	}
-	return 0, fmt.Errorf("no MemAvailable line in /proc/meminfo")
+	return 0, fmt.Errorf("no %s line in /proc/meminfo", key)
 }
 
 func formatKB(kb uint64) string {

@@ -104,8 +104,8 @@ func printSaveResult(path string, err error) {
 }
 
 func printSample(w io.Writer, s sample) {
-	fmt.Fprintf(w, "\n%s  CPU %5.1f %%  available memory %s",
-		s.Time.Format("15:04:05"), s.CPUPercent, formatKB(s.MemAvailableKB))
+	fmt.Fprintf(w, "\n%s  CPU %5.1f %%  available memory %s  swap used %s",
+		s.Time.Format("15:04:05"), s.CPUPercent, formatKB(s.MemAvailableKB), formatKB(s.SwapUsedKB))
 	if s.TempCelsius > 0 {
 		fmt.Fprintf(w, "  temperature %.0f °C", s.TempCelsius)
 	}
