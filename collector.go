@@ -60,7 +60,7 @@ func (c *collector) collect() (sample, error) {
 		Time:           time.Now(),
 		CPUPercent:     cpuUsage(c.previousCPU, cpu),
 		MemAvailableKB: memAvailable,
-		TempCelsius:    readMaxTemperature(thermalZonePattern),
+		TempCelsius:    readTemperature(),
 		TopProcesses:   top,
 	}
 
