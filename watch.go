@@ -11,20 +11,24 @@ import (
 	"time"
 )
 
-const (
-	sampleInterval = time.Second
-	historySize    = 120 // two minutes at one sample per second
-)
+const historyDuration = 2 * time.Minute
 
 type watchConfig struct {
+	interval     time.Duration
 	threshold    float64
 	spikeSamples int
 	incidentDir  string
 }
 
+// historySize is the number of samples that cover historyDuration.
+func (config watchConfig) historySize() int {
+	return int(historyDuration / config.interval)
+}
+
 func parseWatchFlags(args []string) (watchConfig, error) {
 	var config watchConfig
 	flags := flag.NewFlagSet("watch", flag.ContinueOnError)
+	flags.DurationVar(&config.interval, "interval", time.Second, "time between two samples, for example 500ms or 2s")
 	flags.Float64Var(&config.threshold, "threshold", 90, "global CPU percent above which a sample counts as high")
 	flags.IntVar(&config.spikeSamples, "samples", 5, "consecutive high samples that make an incident")
 	flags.StringVar(&config.incidentDir, "dir", "incidents", "folder where incident files are written")
@@ -32,11 +36,14 @@ func parseWatchFlags(args []string) (watchConfig, error) {
 		return watchConfig{}, err
 	}
 
+	if config.interval < 100*time.Millisecond || config.interval > time.Minute {
+		return watchConfig{}, fmt.Errorf("-interval must be between 100ms and 1m")
+	}
 	if config.threshold < 0 || config.threshold >= 100 {
 		return watchConfig{}, fmt.Errorf("-threshold must be between 0 and 100 (100 excluded)")
 	}
-	if config.spikeSamples < 1 || config.spikeSamples > historySize {
-		return watchConfig{}, fmt.Errorf("-samples must be between 1 and %d", historySize)
+	if config.spikeSamples < 1 || config.spikeSamples > config.historySize() {
+		return watchConfig{}, fmt.Errorf("-samples must be between 1 and %d for this interval", config.historySize())
 	}
 	return config, nil
 }
@@ -54,14 +61,14 @@ func runWatch(args []string) error {
 	if err != nil {
 		return err
 	}
-	recent := newHistory(historySize)
+	recent := newHistory(config.historySize())
 	spikes := newDetector(config.threshold, config.spikeSamples)
 
 	// Ctrl+C (SIGINT) or SIGTERM is delivered on this channel instead of killing the program.
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	ticker := time.NewTicker(sampleInterval)
+	ticker := time.NewTicker(config.interval)
 	defer ticker.Stop()
 
 	fmt.Println("Ragnaros is watching. Press Ctrl+C to stop.")
