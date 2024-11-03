@@ -13,8 +13,9 @@ Chaque seconde, `ragnaros watch` :
 1. lit `/proc/stat` et calcule l'utilisation CPU globale (0 à 100 %) à partir de
    la différence avec la mesure précédente ;
 2. lit `MemAvailable` dans `/proc/meminfo` ;
-3. lit la température la plus haute parmi `/sys/class/thermal/thermal_zone*/temp`
-   (ignorée si aucun capteur n'est lisible) ;
+3. lit la température du CPU via `hwmon` (`coretemp` pour Intel, `k10temp` ou
+   `zenpower` pour AMD), sinon la zone la plus chaude de
+   `/sys/class/thermal/thermal_zone*/temp` (ignorée si aucun capteur n'est lisible) ;
 4. lit `/proc/<pid>/stat` de chaque processus et garde les 5 plus gourmands en CPU
    (100 % = un cœur entier, donc un processus peut dépasser 100 %), avec leur
    ligne de commande (`/proc/<pid>/cmdline`) ;
@@ -50,7 +51,7 @@ Par défaut, le dossier `incidents/` est créé dans le répertoire courant.
 $ ./ragnaros watch
 Ragnaros is watching. Press Ctrl+C to stop.
 
-17:24:42  CPU   4.4 %  available memory 44.0 GiB  max temperature 55 °C
+17:24:42  CPU   4.4 %  available memory 44.0 GiB  temperature 55 °C
      4199    16.1 %  /opt/google/chrome/chrome --type=gpu-process --gpu-recent...
      2491    13.1 %  /usr/bin/kwin_wayland --wayland-fd 7 --socket wayland-0 -...
    180255    11.1 %  /opt/google/chrome/chrome --type=renderer --crashpad-hand...
@@ -80,14 +81,14 @@ These are observations of what was running before the spike, not a proof of its 
 ## Limites
 
 - Linux uniquement (`/proc`, `/sys`).
-- La température est celle de la zone thermique la plus chaude, quel que soit le
-  composant (CPU, Wi-Fi, ...). Les capteurs exposés seulement par `hwmon`
-  (fréquent sur AMD avec `k10temp`) ne sont pas lus.
+- Sans capteur CPU `hwmon` reconnu, la température est celle de la zone thermique
+  la plus chaude, qui peut être un autre composant (Wi-Fi, batterie...).
 - Le rapport montre des observations, pas une cause prouvée.
 - Un processus très court (né et terminé entre deux mesures) passe inaperçu.
 - Un processus absent de la mesure précédente est compté depuis zéro. Si sa lecture
   avait échoué alors qu'il existait déjà, tout son temps CPU passé serait attribué
-  à la dernière seconde (cas rare).
+  à la dernière seconde. Une valeur au-delà de tous les cœurs est écartée, une
+  valeur plausible mais fausse reste possible (cas rare).
 - Seuls les 5 premiers processus de chaque seconde sont enregistrés.
 - La ligne de commande est coupée à 60 caractères.
 - L'historique n'existe qu'en mémoire : ce qui précède le lancement de `watch`
