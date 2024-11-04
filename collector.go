@@ -8,6 +8,7 @@ const topProcessCount = 5
 type sample struct {
 	Time           time.Time      `json:"time"`
 	CPUPercent     float64        `json:"cpu_percent"`
+	LoadAverage    float64        `json:"load_1m"`
 	MemAvailableKB uint64         `json:"mem_available_kb"`
 	SwapUsedKB     uint64         `json:"swap_used_kb"`
 	TempCelsius    float64        `json:"temp_celsius,omitempty"` // 0 when no sensor
@@ -42,6 +43,10 @@ func (c *collector) collect() (sample, error) {
 	if err != nil {
 		return sample{}, err
 	}
+	load, err := readLoadAverage()
+	if err != nil {
+		return sample{}, err
+	}
 	processes, err := readProcesses()
 	if err != nil {
 		return sample{}, err
@@ -60,6 +65,7 @@ func (c *collector) collect() (sample, error) {
 	s := sample{
 		Time:           time.Now(),
 		CPUPercent:     cpuUsage(c.previousCPU, cpu),
+		LoadAverage:    load,
 		MemAvailableKB: memory.availableKB,
 		SwapUsedKB:     memory.swapUsedKB,
 		TempCelsius:    readTemperature(),
