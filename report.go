@@ -62,8 +62,12 @@ func buildReport(samples []sample) (incidentReport, error) {
 		sampleCount: len(samples),
 		peakCPU:     first.CPUPercent,
 		peakCPUTime: first.Time,
-		minMemKB:    first.MemAvailableKB,
-		minMemTime:  first.Time,
+		// Starting from the first sample keeps a valid time even when every
+		// load is 0, as in files written before the load was recorded.
+		peakLoad:     first.LoadAverage,
+		peakLoadTime: first.Time,
+		minMemKB:     first.MemAvailableKB,
+		minMemTime:   first.Time,
 	}
 
 	summaries := make(map[int]*processSummary)
