@@ -9,7 +9,7 @@ import (
 func TestBuildReport(t *testing.T) {
 	start := time.Date(2024, 9, 6, 17, 0, 0, 0, time.UTC)
 	samples := []sample{
-		{Time: start, CPUPercent: 40, MemAvailableKB: 5000, TopProcesses: []processUsage{
+		{Time: start, CPUPercent: 40, LoadAverage: 12.5, MemAvailableKB: 5000, TopProcesses: []processUsage{
 			{PID: 10, Name: "backup", CPUPercent: 80},
 			{PID: 20, Name: "browser", CPUPercent: 30},
 		}},
@@ -31,6 +31,9 @@ func TestBuildReport(t *testing.T) {
 	}
 	if report.peakTemp != 81 {
 		t.Errorf("peakTemp = %v, want 81", report.peakTemp)
+	}
+	if report.peakLoad != 12.5 || !report.peakLoadTime.Equal(start) {
+		t.Errorf("peakLoad = %v at %v", report.peakLoad, report.peakLoadTime)
 	}
 	if report.maxSwapKB != 700 || !report.maxSwapTime.Equal(start.Add(2*time.Second)) {
 		t.Errorf("maxSwap = %d at %v", report.maxSwapKB, report.maxSwapTime)
