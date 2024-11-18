@@ -8,19 +8,21 @@ Go 1.23+, bibliothèque standard uniquement, données lues directement dans `/pr
 
 ## Fonctionnement
 
-Chaque seconde, `ragnaros watch` :
+Chaque seconde (réglable avec `-interval`), `ragnaros watch` :
 
 1. lit `/proc/stat` et calcule l'utilisation CPU globale (0 à 100 %) à partir de
    la différence avec la mesure précédente ;
-2. lit `MemAvailable` dans `/proc/meminfo` ;
-3. lit la température du CPU via `hwmon` (`coretemp` pour Intel, `k10temp` ou
+2. lit la charge moyenne sur 1 minute dans `/proc/loadavg` : nombre moyen de
+   tâches qui tournent ou attendent (CPU ou disque), à comparer au nombre de cœurs ;
+3. lit `MemAvailable` et le swap utilisé (`SwapTotal - SwapFree`) dans `/proc/meminfo` ;
+4. lit la température du CPU via `hwmon` (`coretemp` pour Intel, `k10temp` ou
    `zenpower` pour AMD), sinon la zone la plus chaude de
    `/sys/class/thermal/thermal_zone*/temp` (ignorée si aucun capteur n'est lisible) ;
-4. lit `/proc/<pid>/stat` de chaque processus et garde les 5 plus gourmands en CPU
+5. lit `/proc/<pid>/stat` de chaque processus et garde les 5 plus gourmands en CPU
    (100 % = un cœur entier, donc un processus peut dépasser 100 %), avec leur
    ligne de commande (`/proc/<pid>/cmdline`) ;
-5. ajoute la mesure à un historique limité à 120 mesures (2 minutes) ;
-6. si le CPU dépasse 90 % sur 5 mesures consécutives, écrit l'historique dans
+6. ajoute la mesure à un historique qui couvre 2 minutes (120 mesures à 1 s) ;
+7. si le CPU dépasse 90 % sur 5 mesures consécutives, écrit l'historique dans
    `incidents/incident-AAAAMMJJ-HHMMSS.jsonl` (une mesure JSON par ligne).
    Un pic prolongé ne produit qu'un seul fichier. La détection se réarme dès que
    le CPU repasse à 90 % ou moins.
@@ -29,7 +31,8 @@ Un Ctrl+C pendant un pic pas encore confirmé enregistre quand même l'historiqu
 on arrête souvent l'outil justement parce que la machine rame.
 
 `ragnaros report` relit un fichier d'incident et affiche la période, le pic CPU,
-le minimum de mémoire disponible, la température maximale et les processus les
+le pic de charge, le minimum de mémoire disponible, le maximum de swap utilisé,
+la température maximale et les processus les
 plus actifs (classés par CPU cumulé sur la période).
 
 ## Commandes
@@ -38,6 +41,8 @@ plus actifs (classés par CPU cumulé sur la période).
 go build -o ragnaros .
 ./ragnaros watch                                  # Ctrl+C pour arrêter
 ./ragnaros watch -threshold 70 -samples 10 -dir /tmp/ragnaros
+./ragnaros watch -interval 500ms                  # historique : 240 mesures
+./ragnaros watch -h                               # liste des options
 ./ragnaros watch -threshold 1 -samples 2          # déclenche un incident sans charger la machine
 ./ragnaros report incidents/incident-20240906-172008.jsonl
 go test ./...
@@ -51,7 +56,7 @@ Par défaut, le dossier `incidents/` est créé dans le répertoire courant.
 $ ./ragnaros watch
 Ragnaros is watching. Press Ctrl+C to stop.
 
-17:24:42  CPU   4.4 %  available memory 44.0 GiB  temperature 55 °C
+17:24:42  CPU   4.4 %  load 1.50  available memory 44.0 GiB  swap used 0 MiB  temperature 55 °C
      4199    16.1 %  /opt/google/chrome/chrome --type=gpu-process --gpu-recent...
      2491    13.1 %  /usr/bin/kwin_wayland --wayland-fd 7 --socket wayland-0 -...
    180255    11.1 %  /opt/google/chrome/chrome --type=renderer --crashpad-hand...
@@ -66,7 +71,9 @@ $ ./ragnaros report incidents/incident-20240906-172008.jsonl
 Incident file: incidents/incident-20240906-172008.jsonl
 Period:           2024-09-06 17:20:00 -> 2024-09-06 17:20:11 (11s, 12 samples)
 CPU peak:         98.0 % at 17:20:08
+Load peak (1 m):  24.31 at 17:20:11
 Lowest memory:    22.9 GiB available at 17:20:11
+Max swap used:    none
 Max temperature:  92 °C at 17:20:10
 
 Most active processes (ranked by CPU used, SEEN = times in the top 5):
@@ -93,5 +100,6 @@ These are observations of what was running before the spike, not a proof of its 
 - La ligne de commande est coupée à 60 caractères.
 - L'historique n'existe qu'en mémoire : ce qui précède le lancement de `watch`
   n'est pas connu, et un arrêt brutal (`kill -9`, crash) n'enregistre rien.
-- La taille d'historique (120 mesures) et l'intervalle (1 s) sont des constantes
-  dans `watch.go`.
+- La durée d'historique (2 minutes) est une constante dans `watch.go`.
+- La charge moyenne sur 1 minute réagit lentement : elle monte encore après le
+  début du pic.
