@@ -9,6 +9,8 @@ type sample struct {
 	Time           time.Time      `json:"time"`
 	CPUPercent     float64        `json:"cpu_percent"`
 	LoadAverage    float64        `json:"load_1m"`
+	FastestCoreMHz int            `json:"fastest_core_mhz,omitempty"` // 0 without cpufreq
+	CoreLimitMHz   int            `json:"core_limit_mhz,omitempty"`
 	MemAvailableKB uint64         `json:"mem_available_kb"`
 	SwapUsedKB     uint64         `json:"swap_used_kb"`
 	TempCelsius    float64        `json:"temp_celsius,omitempty"` // 0 when no sensor
@@ -62,10 +64,15 @@ func (c *collector) collect() (sample, error) {
 		top[i].Command = readCommand(top[i].PID)
 	}
 
+	frequencies := readCoreFrequencies(cpuFreqPattern)
+	fastest, limit := fastestCore(frequencies)
+
 	s := sample{
 		Time:           time.Now(),
 		CPUPercent:     cpuUsage(c.previousCPU, cpu),
 		LoadAverage:    load,
+		FastestCoreMHz: fastest,
+		CoreLimitMHz:   limit,
 		MemAvailableKB: memory.availableKB,
 		SwapUsedKB:     memory.swapUsedKB,
 		TempCelsius:    readTemperature(),

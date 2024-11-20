@@ -109,6 +109,9 @@ func printSample(w io.Writer, s sample) {
 	if s.TempCelsius > 0 {
 		fmt.Fprintf(w, "  temperature %.0f °C", s.TempCelsius)
 	}
+	if s.CoreLimitMHz > 0 {
+		fmt.Fprintf(w, "  fastest core %d/%d MHz", s.FastestCoreMHz, s.CoreLimitMHz)
+	}
 	fmt.Fprintln(w)
 	for _, p := range s.TopProcesses {
 		fmt.Fprintf(w, "  %7d  %6.1f %%  %s\n", p.PID, p.CPUPercent, p.label())
