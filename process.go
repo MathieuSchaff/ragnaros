@@ -14,6 +14,7 @@ type processStat struct {
 	name      string
 	startTime uint64 // ticks since boot, used to detect PID reuse
 	ticks     uint64 // user + system CPU time, cumulative
+	core      int    // core the process last ran on
 }
 
 // processKey identifies a process even if its PID is later reused:
@@ -30,6 +31,9 @@ type processUsage struct {
 	Name       string  `json:"name"`
 	Command    string  `json:"command,omitempty"`
 	CPUPercent float64 `json:"cpu_percent"`
+	CoreMHz    int     `json:"core_mhz,omitempty"`     // frequency of the core it last ran on
+	CoreMaxMHz int     `json:"core_max_mhz,omitempty"` // highest frequency of that core
+	core       int     // not saved: only used to find CoreMHz
 }
 
 func readProcesses() ([]processStat, error) {
@@ -74,7 +78,7 @@ func parseProcessStat(content string) (processStat, error) {
 
 	// fields[0] is field 3 of the man page (state), so field N is fields[N-3].
 	fields := strings.Fields(content[nameEnd+1:])
-	if len(fields) < 20 {
+	if len(fields) < 37 {
 		return processStat{}, fmt.Errorf("stat line too short")
 	}
 	utime, err := strconv.ParseUint(fields[11], 10, 64)
@@ -89,12 +93,17 @@ func parseProcessStat(content string) (processStat, error) {
 	if err != nil {
 		return processStat{}, err
 	}
+	core, err := strconv.Atoi(fields[36]) // field 39, "processor"
+	if err != nil {
+		return processStat{}, err
+	}
 
 	return processStat{
 		pid:       pid,
 		name:      content[nameStart+1 : nameEnd],
 		startTime: startTime,
 		ticks:     utime + stime,
+		core:      core,
 	}, nil
 }
 
@@ -158,7 +167,7 @@ func topProcesses(previous map[processKey]uint64, current []processStat, elapsed
 		if percent > float64(cores)*100 {
 			continue
 		}
-		usages = append(usages, processUsage{PID: stat.pid, Name: stat.name, CPUPercent: percent})
+		usages = append(usages, processUsage{PID: stat.pid, Name: stat.name, CPUPercent: percent, core: stat.core})
 	}
 
 	sort.Slice(usages, func(i, j int) bool {

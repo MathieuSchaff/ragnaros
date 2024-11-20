@@ -103,6 +103,14 @@ func printSaveResult(path string, err error) {
 	}
 }
 
+// formatCoreFrequency keeps a fixed width so the commands stay aligned.
+func formatCoreFrequency(p processUsage) string {
+	if p.CoreMaxMHz == 0 {
+		return fmt.Sprintf("%14s", "")
+	}
+	return fmt.Sprintf("%5d/%4d MHz", p.CoreMHz, p.CoreMaxMHz)
+}
+
 func printSample(w io.Writer, s sample) {
 	fmt.Fprintf(w, "\n%s  CPU %5.1f %%  load %.2f  available memory %s  swap used %s",
 		s.Time.Format("15:04:05"), s.CPUPercent, s.LoadAverage, formatKB(s.MemAvailableKB), formatKB(s.SwapUsedKB))
@@ -114,6 +122,6 @@ func printSample(w io.Writer, s sample) {
 	}
 	fmt.Fprintln(w)
 	for _, p := range s.TopProcesses {
-		fmt.Fprintf(w, "  %7d  %6.1f %%  %s\n", p.PID, p.CPUPercent, p.label())
+		fmt.Fprintf(w, "  %7d  %6.1f %%  %s  %s\n", p.PID, p.CPUPercent, formatCoreFrequency(p), p.label())
 	}
 }

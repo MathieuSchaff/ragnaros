@@ -7,7 +7,8 @@ import (
 
 func TestParseProcessStat(t *testing.T) {
 	// Name with a space and a ')' to check the parsing of the name.
-	line := "4242 (my (app) x) S 1 4242 4242 0 -1 4194560 100 0 0 0 30 12 0 0 20 0 1 0 98765 1000 50 0\n"
+	line := "4242 (my (app) x) S 1 4242 4242 0 -1 4194560 100 0 0 0 30 12 0 0 20 0 1 0 98765 1000 50 0" +
+		" 0 0 0 0 0 0 0 0 0 0 0 0 0 6 0 0 0 0 0 0 0 0 0 0 0 0 0\n" // field 39 (core) = 6
 	stat, err := parseProcessStat(line)
 	if err != nil {
 		t.Fatal(err)
@@ -20,6 +21,9 @@ func TestParseProcessStat(t *testing.T) {
 	}
 	if stat.startTime != 98765 {
 		t.Errorf("startTime = %d, want 98765", stat.startTime)
+	}
+	if stat.core != 6 {
+		t.Errorf("core = %d, want 6", stat.core)
 	}
 }
 

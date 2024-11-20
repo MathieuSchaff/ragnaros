@@ -58,14 +58,17 @@ func (c *collector) collect() (sample, error) {
 	// of cores gives the elapsed time of one core, in the same unit as process times.
 	elapsedTicks := float64(cpu.total-c.previousCPU.total) / float64(cpu.cores)
 
+	frequencies := readCoreFrequencies(cpuFreqPattern)
+	fastest, limit := fastestCore(frequencies)
+
 	top := topProcesses(c.previousProcesses, processes, elapsedTicks, cpu.cores, topProcessCount)
 	// Read the command line only for the few top processes: cheaper than for all.
 	for i := range top {
 		top[i].Command = readCommand(top[i].PID)
+		// A single-threaded program is limited by the speed of its own core.
+		top[i].CoreMHz = frequencies[top[i].core].currentMHz
+		top[i].CoreMaxMHz = frequencies[top[i].core].maxMHz
 	}
-
-	frequencies := readCoreFrequencies(cpuFreqPattern)
-	fastest, limit := fastestCore(frequencies)
 
 	s := sample{
 		Time:           time.Now(),
