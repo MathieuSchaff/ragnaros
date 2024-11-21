@@ -62,7 +62,7 @@ func runWatch(args []string) error {
 		return err
 	}
 	recent := newHistory(config.historySize())
-	spikes := newDetector(config.threshold, config.spikeSamples)
+	spikes := newDetector(config.spikeSamples)
 
 	// Ctrl+C (SIGINT) or SIGTERM is delivered on this channel instead of killing the program.
 	stop := make(chan os.Signal, 1)
@@ -89,7 +89,7 @@ func runWatch(args []string) error {
 				return err
 			}
 			printSample(os.Stdout, s)
-			printSaveResult(recordSample(recent, spikes, s, config.incidentDir))
+			printSaveResult(recordSample(recent, spikes, s, s.CPUPercent > config.threshold, config.incidentDir))
 		}
 	}
 }

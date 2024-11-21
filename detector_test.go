@@ -2,11 +2,11 @@ package main
 
 import "testing"
 
-// countIncidents feeds simulated CPU values and returns the indexes that fired.
+// countIncidents feeds simulated CPU values, high above 90, and returns the indexes that fired.
 func countIncidents(d *detector, values []float64) []int {
 	var fired []int
 	for i, value := range values {
-		if d.update(value) {
+		if d.update(value > 90) {
 			fired = append(fired, i)
 		}
 	}
@@ -14,7 +14,7 @@ func countIncidents(d *detector, values []float64) []int {
 }
 
 func TestDetectorNeedsFiveConsecutiveSamples(t *testing.T) {
-	d := newDetector(90, 5)
+	d := newDetector(5)
 	fired := countIncidents(d, []float64{95, 95, 95, 95, 50, 95, 95, 95, 95})
 	if len(fired) != 0 {
 		t.Errorf("fired at %v, want no incident (spike interrupted)", fired)
@@ -22,7 +22,7 @@ func TestDetectorNeedsFiveConsecutiveSamples(t *testing.T) {
 }
 
 func TestDetectorFiresOncePerSpike(t *testing.T) {
-	d := newDetector(90, 5)
+	d := newDetector(5)
 	values := []float64{91, 92, 93, 94, 95, 99, 99, 99, 99, 99, 99}
 	fired := countIncidents(d, values)
 	if len(fired) != 1 || fired[0] != 4 {
@@ -31,7 +31,7 @@ func TestDetectorFiresOncePerSpike(t *testing.T) {
 }
 
 func TestDetectorRearmsAfterDrop(t *testing.T) {
-	d := newDetector(90, 5)
+	d := newDetector(5)
 	values := []float64{95, 95, 95, 95, 95, 95, 40, 95, 95, 95, 95, 95}
 	fired := countIncidents(d, values)
 	if len(fired) != 2 || fired[0] != 4 || fired[1] != 11 {
@@ -40,7 +40,7 @@ func TestDetectorRearmsAfterDrop(t *testing.T) {
 }
 
 func TestDetectorThresholdIsStrict(t *testing.T) {
-	d := newDetector(90, 5)
+	d := newDetector(5)
 	fired := countIncidents(d, []float64{90, 90, 90, 90, 90, 90})
 	if len(fired) != 0 {
 		t.Errorf("fired at %v, want none: 90 is not above 90", fired)
@@ -48,7 +48,7 @@ func TestDetectorThresholdIsStrict(t *testing.T) {
 }
 
 func TestDetectorPendingSpike(t *testing.T) {
-	d := newDetector(90, 5)
+	d := newDetector(5)
 	if d.pendingSpike() {
 		t.Error("pending before any sample")
 	}

@@ -9,7 +9,7 @@ import (
 func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
 	dir := t.TempDir()
 	recent := newHistory(120)
-	spikes := newDetector(90, 5)
+	spikes := newDetector(5)
 	start := time.Date(2024, 9, 6, 17, 0, 0, 0, time.UTC)
 
 	// 3 calm samples, then a 10 second spike: only one file expected.
@@ -17,7 +17,7 @@ func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
 	var saved []string
 	for i, cpu := range cpuValues {
 		s := sample{Time: start.Add(time.Duration(i) * time.Second), CPUPercent: cpu, MemAvailableKB: 1000}
-		path, err := recordSample(recent, spikes, s, dir)
+		path, err := recordSample(recent, spikes, s, cpu > 90, dir)
 		if err != nil {
 			t.Fatal(err)
 		}

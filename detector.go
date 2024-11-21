@@ -1,22 +1,21 @@
 package main
 
-// detector reports a CPU spike once the usage stays above threshold for
-// required consecutive samples. It fires once per spike and rearms when
-// the usage goes back to or below the threshold.
+// detector reports a spike once required consecutive samples are high.
+// It fires once per spike and rearms on the first sample that is not high.
+// Deciding what "high" means is left to the caller.
 type detector struct {
-	threshold   float64
 	required    int
 	consecutive int
 	triggered   bool
 }
 
-func newDetector(threshold float64, required int) *detector {
-	return &detector{threshold: threshold, required: required}
+func newDetector(required int) *detector {
+	return &detector{required: required}
 }
 
 // update returns true only on the sample that starts an incident.
-func (d *detector) update(cpuPercent float64) bool {
-	if cpuPercent <= d.threshold {
+func (d *detector) update(high bool) bool {
+	if !high {
 		d.consecutive = 0
 		d.triggered = false
 		return false
@@ -30,7 +29,7 @@ func (d *detector) update(cpuPercent float64) bool {
 	return false
 }
 
-// pendingSpike is true when the usage is high but no incident was saved yet.
+// pendingSpike is true when samples are high but no incident was saved yet.
 func (d *detector) pendingSpike() bool {
 	return d.consecutive > 0 && !d.triggered
 }
