@@ -14,10 +14,11 @@ import (
 const historyDuration = 2 * time.Minute
 
 type watchConfig struct {
-	interval     time.Duration
-	threshold    float64
-	spikeSamples int
-	incidentDir  string
+	interval      time.Duration
+	threshold     float64
+	coreThreshold float64 // 0 disables the single process trigger
+	spikeSamples  int
+	incidentDir   string
 }
 
 // historySize is the number of samples that cover historyDuration.
@@ -30,6 +31,7 @@ func parseWatchFlags(args []string) (watchConfig, error) {
 	flags := flag.NewFlagSet("watch", flag.ContinueOnError)
 	flags.DurationVar(&config.interval, "interval", time.Second, "time between two samples, for example 500ms or 2s")
 	flags.Float64Var(&config.threshold, "threshold", 90, "global CPU percent above which a sample counts as high")
+	flags.Float64Var(&config.coreThreshold, "core-threshold", 95, "process CPU percent (100 = one core) that counts as high, 0 to disable")
 	flags.IntVar(&config.spikeSamples, "samples", 5, "consecutive high samples that make an incident")
 	flags.StringVar(&config.incidentDir, "dir", "incidents", "folder where incident files are written")
 	if err := flags.Parse(args); err != nil {
@@ -41,6 +43,9 @@ func parseWatchFlags(args []string) (watchConfig, error) {
 	}
 	if config.threshold < 0 || config.threshold >= 100 {
 		return watchConfig{}, fmt.Errorf("-threshold must be between 0 and 100 (100 excluded)")
+	}
+	if config.coreThreshold < 0 {
+		return watchConfig{}, fmt.Errorf("-core-threshold must be 0 or more")
 	}
 	if config.spikeSamples < 1 || config.spikeSamples > config.historySize() {
 		return watchConfig{}, fmt.Errorf("-samples must be between 1 and %d for this interval", config.historySize())
@@ -89,9 +94,29 @@ func runWatch(args []string) error {
 				return err
 			}
 			printSample(os.Stdout, s)
-			printSaveResult(recordSample(recent, spikes, s, s.CPUPercent > config.threshold, config.incidentDir))
+			reason := spikeReason(s, config)
+			path, err := recordSample(recent, spikes, s, reason != "", config.incidentDir)
+			if path != "" {
+				fmt.Println("Spike:", reason)
+			}
+			printSaveResult(path, err)
 		}
 	}
+}
+
+// spikeReason tells why a sample is high, or returns "" when it is not.
+// A single-threaded program, like many games, can saturate one core and
+// slow down while the global CPU stays low: hence the per-process check.
+func spikeReason(s sample, config watchConfig) string {
+	if s.CPUPercent > config.threshold {
+		return fmt.Sprintf("global CPU at %.0f %%", s.CPUPercent)
+	}
+	// TopProcesses is sorted, so the first one is the busiest.
+	if config.coreThreshold > 0 && len(s.TopProcesses) > 0 && s.TopProcesses[0].CPUPercent > config.coreThreshold {
+		busiest := s.TopProcesses[0]
+		return fmt.Sprintf("%s at %.0f %% of a core", busiest.Name, busiest.CPUPercent)
+	}
+	return ""
 }
 
 // printSaveResult only reports: a failed save must not stop the monitoring.

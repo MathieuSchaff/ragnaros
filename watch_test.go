@@ -7,7 +7,7 @@ func TestParseWatchFlagsDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if config.threshold != 90 || config.spikeSamples != 5 || config.incidentDir != "incidents" {
+	if config.threshold != 90 || config.coreThreshold != 95 || config.spikeSamples != 5 || config.incidentDir != "incidents" {
 		t.Errorf("got %+v", config)
 	}
 	if config.historySize() != 120 {
@@ -31,10 +31,35 @@ func TestParseWatchFlagsRejectsBadValues(t *testing.T) {
 		{"-samples", "0"},
 		{"-samples", "500"},
 		{"-interval", "10ms"},
+		{"-core-threshold", "-1"},
 		{"-interval", "30s", "-samples", "5"}, // only 4 samples fit in two minutes
 	} {
 		if _, err := parseWatchFlags(args); err == nil {
 			t.Errorf("%v: expected an error", args)
 		}
+	}
+}
+
+func TestSpikeReason(t *testing.T) {
+	config := watchConfig{threshold: 90, coreThreshold: 95}
+	game := []processUsage{{Name: "WoW.exe", CPUPercent: 99}}
+	tests := []struct {
+		name   string
+		sample sample
+		want   string
+	}{
+		{"calm", sample{CPUPercent: 20}, ""},
+		{"global CPU", sample{CPUPercent: 95}, "global CPU at 95 %"},
+		{"one saturated core", sample{CPUPercent: 6, TopProcesses: game}, "WoW.exe at 99 % of a core"},
+	}
+	for _, test := range tests {
+		if got := spikeReason(test.sample, config); got != test.want {
+			t.Errorf("%s: got %q, want %q", test.name, got, test.want)
+		}
+	}
+
+	config.coreThreshold = 0
+	if got := spikeReason(sample{CPUPercent: 6, TopProcesses: game}, config); got != "" {
+		t.Errorf("disabled core trigger: got %q", got)
 	}
 }
