@@ -18,6 +18,16 @@ type processSummary struct {
 	appearances int
 	totalCPU    float64 // sum of the per-second percentages
 	maxCPU      float64
+	coreMHzSum  int // to average the frequency of the core it ran on
+	coreMHzSeen int
+	coreMaxMHz  int
+}
+
+func (p processSummary) averageCoreMHz() int {
+	if p.coreMHzSeen == 0 {
+		return 0
+	}
+	return p.coreMHzSum / p.coreMHzSeen
 }
 
 type incidentReport struct {
@@ -33,7 +43,11 @@ type incidentReport struct {
 	maxSwapTime  time.Time
 	peakTemp     float64 // 0 when the incident has no temperature
 	peakTempTime time.Time
-	topProcesses []processSummary
+	// Lowest speed of the fastest core: low under load suggests throttling.
+	minFastestCoreMHz  int // 0 without cpufreq data
+	minFastestCoreTime time.Time
+	coreLimitMHz       int
+	topProcesses       []processSummary
 }
 
 func runReport(path string) error {
@@ -98,6 +112,11 @@ func buildReport(samples []sample) (incidentReport, error) {
 			report.peakTemp = s.TempCelsius
 			report.peakTempTime = s.Time
 		}
+		if s.CoreLimitMHz > 0 && (report.minFastestCoreMHz == 0 || s.FastestCoreMHz < report.minFastestCoreMHz) {
+			report.minFastestCoreMHz = s.FastestCoreMHz
+			report.minFastestCoreTime = s.Time
+			report.coreLimitMHz = s.CoreLimitMHz
+		}
 		addAppearances(summaries, s.TopProcesses)
 	}
 
@@ -119,6 +138,11 @@ func addAppearances(summaries map[int]*processSummary, usages []processUsage) {
 		summary.totalCPU += usage.CPUPercent
 		if usage.CPUPercent > summary.maxCPU {
 			summary.maxCPU = usage.CPUPercent
+		}
+		if usage.CoreMaxMHz > 0 {
+			summary.coreMHzSum += usage.CoreMHz
+			summary.coreMHzSeen++
+			summary.coreMaxMHz = max(summary.coreMaxMHz, usage.CoreMaxMHz)
 		}
 	}
 }
@@ -156,14 +180,22 @@ func printReport(w io.Writer, r incidentReport) {
 	} else {
 		fmt.Fprintln(w, "Max temperature:  no sensor data")
 	}
-
-	fmt.Fprintf(w, "\nMost active processes (ranked by CPU used, SEEN = times in the top %d):\n", topProcessCount)
-	fmt.Fprintf(w, "  %7s  %6s  %8s  %s\n", "PID", "SEEN", "MAX CPU", "COMMAND")
-	for _, p := range r.topProcesses {
-		seen := fmt.Sprintf("%d/%d", p.appearances, r.sampleCount)
-		fmt.Fprintf(w, "  %7d  %6s  %6.1f %%  %s\n", p.pid, seen, p.maxCPU, p.label)
+	if r.coreLimitMHz > 0 {
+		fmt.Fprintf(w, "Slowest moment:   fastest core at %d MHz (limit %d) at %s\n",
+			r.minFastestCoreMHz, r.coreLimitMHz, r.minFastestCoreTime.Format("15:04:05"))
 	}
 
-	fmt.Fprintln(w, "\nProcess CPU: 100 % means one full core.")
+	fmt.Fprintf(w, "\nMost active processes (ranked by CPU used, SEEN = times in the top %d):\n", topProcessCount)
+	fmt.Fprintf(w, "  %7s  %6s  %8s  %14s  %s\n", "PID", "SEEN", "MAX CPU", "AVG CORE", "COMMAND")
+	for _, p := range r.topProcesses {
+		seen := fmt.Sprintf("%d/%d", p.appearances, r.sampleCount)
+		core := ""
+		if p.coreMaxMHz > 0 {
+			core = fmt.Sprintf("%d/%d MHz", p.averageCoreMHz(), p.coreMaxMHz)
+		}
+		fmt.Fprintf(w, "  %7d  %6s  %6.1f %%  %14s  %s\n", p.pid, seen, p.maxCPU, core, p.label)
+	}
+
+	fmt.Fprintln(w, "\nProcess CPU: 100 % means one full core. AVG CORE: mean speed of the core it ran on.")
 	fmt.Fprintln(w, "These are observations of what was running before the spike, not a proof of its cause.")
 }

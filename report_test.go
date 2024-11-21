@@ -83,3 +83,28 @@ func TestPrintReportMentionsObservations(t *testing.T) {
 		t.Errorf("report should warn it shows observations only:\n%s", output.String())
 	}
 }
+
+func TestBuildReportCoreFrequency(t *testing.T) {
+	game := func(coreMHz int) processUsage {
+		return processUsage{PID: 6, Name: "WoW.exe", CPUPercent: 100, CoreMHz: coreMHz, CoreMaxMHz: 4700}
+	}
+	samples := []sample{
+		{FastestCoreMHz: 4600, CoreLimitMHz: 4700, TopProcesses: []processUsage{game(4600)}},
+		{FastestCoreMHz: 2697, CoreLimitMHz: 4700, TopProcesses: []processUsage{game(2697)}},
+		{FastestCoreMHz: 3000, CoreLimitMHz: 4700, TopProcesses: []processUsage{game(960)}},
+	}
+	report, _ := buildReport(samples)
+	if report.minFastestCoreMHz != 2697 || report.coreLimitMHz != 4700 {
+		t.Errorf("slowest = %d/%d, want 2697/4700", report.minFastestCoreMHz, report.coreLimitMHz)
+	}
+	if got := report.topProcesses[0].averageCoreMHz(); got != 2752 {
+		t.Errorf("average core = %d, want 2752", got)
+	}
+}
+
+func TestBuildReportWithoutFrequency(t *testing.T) {
+	report, _ := buildReport([]sample{{CPUPercent: 95}})
+	if report.coreLimitMHz != 0 {
+		t.Errorf("coreLimitMHz = %d, want 0 without cpufreq", report.coreLimitMHz)
+	}
+}
