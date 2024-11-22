@@ -17,6 +17,7 @@ type watchConfig struct {
 	interval      time.Duration
 	threshold     float64
 	coreThreshold float64 // 0 disables the single process trigger
+	tempThreshold float64 // 0 disables the temperature trigger
 	spikeSamples  int
 	incidentDir   string
 }
@@ -32,6 +33,7 @@ func parseWatchFlags(args []string) (watchConfig, error) {
 	flags.DurationVar(&config.interval, "interval", time.Second, "time between two samples, for example 500ms or 2s")
 	flags.Float64Var(&config.threshold, "threshold", 90, "global CPU percent above which a sample counts as high")
 	flags.Float64Var(&config.coreThreshold, "core-threshold", 95, "process CPU percent (100 = one core) that counts as high, 0 to disable")
+	flags.Float64Var(&config.tempThreshold, "temp-threshold", 90, "temperature in °C that counts as high, 0 to disable")
 	flags.IntVar(&config.spikeSamples, "samples", 5, "consecutive high samples that make an incident")
 	flags.StringVar(&config.incidentDir, "dir", "incidents", "folder where incident files are written")
 	if err := flags.Parse(args); err != nil {
@@ -46,6 +48,9 @@ func parseWatchFlags(args []string) (watchConfig, error) {
 	}
 	if config.coreThreshold < 0 {
 		return watchConfig{}, fmt.Errorf("-core-threshold must be 0 or more")
+	}
+	if config.tempThreshold < 0 {
+		return watchConfig{}, fmt.Errorf("-temp-threshold must be 0 or more")
 	}
 	if config.spikeSamples < 1 || config.spikeSamples > config.historySize() {
 		return watchConfig{}, fmt.Errorf("-samples must be between 1 and %d for this interval", config.historySize())
@@ -115,6 +120,10 @@ func spikeReason(s sample, config watchConfig) string {
 	if config.coreThreshold > 0 && len(s.TopProcesses) > 0 && s.TopProcesses[0].CPUPercent > config.coreThreshold {
 		busiest := s.TopProcesses[0]
 		return fmt.Sprintf("%s at %.0f %% of a core", busiest.Name, busiest.CPUPercent)
+	}
+	// A hot CPU lowers its frequency, so programs slow down at the same usage.
+	if config.tempThreshold > 0 && s.TempCelsius > config.tempThreshold {
+		return fmt.Sprintf("temperature at %.0f °C", s.TempCelsius)
 	}
 	return ""
 }
