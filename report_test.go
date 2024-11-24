@@ -108,3 +108,22 @@ func TestBuildReportWithoutFrequency(t *testing.T) {
 		t.Errorf("coreLimitMHz = %d, want 0 without cpufreq", report.coreLimitMHz)
 	}
 }
+
+func TestBuildReportGPU(t *testing.T) {
+	start := time.Date(2024, 9, 6, 17, 0, 0, 0, time.UTC)
+	samples := []sample{
+		{Time: start, GPUState: "asleep"},
+		{Time: start.Add(time.Second), GPUState: "active", GPUPercent: 14, GPUTempCelsius: 83, GPUPowerWatts: 24},
+		{Time: start.Add(2 * time.Second), GPUState: "active", GPUPercent: 9, GPUTempCelsius: 80, GPUPowerWatts: 30},
+	}
+	report, _ := buildReport(samples)
+	if report.gpuSamples != 3 || report.gpuAsleepSamples != 1 {
+		t.Errorf("gpu samples %d, asleep %d, want 3 and 1", report.gpuSamples, report.gpuAsleepSamples)
+	}
+	if report.peakGPUPercent != 14 || !report.peakGPUTime.Equal(start.Add(time.Second)) {
+		t.Errorf("GPU peak %v at %v", report.peakGPUPercent, report.peakGPUTime)
+	}
+	if report.maxGPUTempCelsius != 83 || report.maxGPUPowerWatts != 30 {
+		t.Errorf("max GPU %v °C %v W", report.maxGPUTempCelsius, report.maxGPUPowerWatts)
+	}
+}

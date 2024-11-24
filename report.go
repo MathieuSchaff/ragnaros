@@ -47,6 +47,12 @@ type incidentReport struct {
 	minFastestCoreMHz  int // 0 without cpufreq data
 	minFastestCoreTime time.Time
 	coreLimitMHz       int
+	gpuSamples         int // samples with an NVIDIA GPU state
+	gpuAsleepSamples   int
+	peakGPUPercent     float64
+	peakGPUTime        time.Time
+	maxGPUTempCelsius  float64
+	maxGPUPowerWatts   float64
 	topProcesses       []processSummary
 }
 
@@ -117,11 +123,28 @@ func buildReport(samples []sample) (incidentReport, error) {
 			report.minFastestCoreTime = s.Time
 			report.coreLimitMHz = s.CoreLimitMHz
 		}
+		addGPU(&report, s)
 		addAppearances(summaries, s.TopProcesses)
 	}
 
 	report.topProcesses = rankProcesses(summaries, reportProcessCount)
 	return report, nil
+}
+
+func addGPU(report *incidentReport, s sample) {
+	if s.GPUState == "" {
+		return
+	}
+	report.gpuSamples++
+	if s.GPUState == "asleep" {
+		report.gpuAsleepSamples++
+	}
+	if s.GPUPercent > report.peakGPUPercent || report.peakGPUTime.IsZero() {
+		report.peakGPUPercent = s.GPUPercent
+		report.peakGPUTime = s.Time
+	}
+	report.maxGPUTempCelsius = max(report.maxGPUTempCelsius, s.GPUTempCelsius)
+	report.maxGPUPowerWatts = max(report.maxGPUPowerWatts, s.GPUPowerWatts)
 }
 
 func addAppearances(summaries map[int]*processSummary, usages []processUsage) {
@@ -183,6 +206,11 @@ func printReport(w io.Writer, r incidentReport) {
 	if r.coreLimitMHz > 0 {
 		fmt.Fprintf(w, "Slowest moment:   fastest core at %d MHz (limit %d) at %s\n",
 			r.minFastestCoreMHz, r.coreLimitMHz, r.minFastestCoreTime.Format("15:04:05"))
+	}
+	if r.gpuSamples > 0 {
+		fmt.Fprintf(w, "GPU peak:         %.0f %% at %s, max %.0f °C, max %.0f W (asleep in %d/%d samples)\n",
+			r.peakGPUPercent, r.peakGPUTime.Format("15:04:05"), r.maxGPUTempCelsius, r.maxGPUPowerWatts,
+			r.gpuAsleepSamples, r.gpuSamples)
 	}
 
 	fmt.Fprintf(w, "\nMost active processes (ranked by CPU used, SEEN = times in the top %d):\n", topProcessCount)
