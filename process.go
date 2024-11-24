@@ -148,7 +148,7 @@ func ticksByProcess(stats []processStat) map[processKey]uint64 {
 
 // topProcesses returns the processes that used the most CPU since the previous
 // sample. elapsedTicks is the time elapsed for one core, in clock ticks.
-func topProcesses(previous map[processKey]uint64, current []processStat, elapsedTicks float64, cores int, limit int) []processUsage {
+func topProcesses(previous map[processKey]uint64, current []processStat, elapsedTicks float64, limit int) []processUsage {
 	if elapsedTicks <= 0 {
 		return nil
 	}
@@ -162,11 +162,6 @@ func topProcesses(previous map[processKey]uint64, current []processStat, elapsed
 			continue
 		}
 		percent := float64(stat.ticks-before) / elapsedTicks * 100
-		// More than all cores together is impossible: the process existed before
-		// but its previous reading failed, so its whole lifetime was counted.
-		if percent > float64(cores)*100 {
-			continue
-		}
 		usages = append(usages, processUsage{PID: stat.pid, Name: stat.name, CPUPercent: percent, core: stat.core})
 	}
 

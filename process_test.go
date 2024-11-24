@@ -47,7 +47,7 @@ func TestTopProcesses(t *testing.T) {
 		{pid: 4, name: "fresh", startTime: 40, ticks: 300}, // started since last reading
 	}
 
-	got := topProcesses(previous, current, 100, 8, 5)
+	got := topProcesses(previous, current, 100, 5)
 
 	// The reused PID 3 is counted from zero, not from the old process's 100 ticks.
 	want := []processUsage{
@@ -73,7 +73,7 @@ func TestTopProcessesLimit(t *testing.T) {
 		previous[processKey{pid, 0}] = 0
 		current = append(current, processStat{pid: pid, ticks: uint64(pid)})
 	}
-	got := topProcesses(previous, current, 100, 8, 5)
+	got := topProcesses(previous, current, 100, 5)
 	if len(got) != 5 || got[0].PID != 8 {
 		t.Errorf("got %+v, want 5 processes starting with PID 8", got)
 	}
@@ -92,13 +92,5 @@ func TestFormatCommand(t *testing.T) {
 func TestLabelFallsBackToName(t *testing.T) {
 	if got := (processUsage{Name: "kworker/0:1"}).label(); got != "kworker/0:1" {
 		t.Errorf("got %q", got)
-	}
-}
-
-func TestTopProcessesSkipsImpossibleUsage(t *testing.T) {
-	// Missed by the previous reading: its 2000 lifetime ticks would mean 20 cores out of 8.
-	current := []processStat{{pid: 7, name: "old", startTime: 1, ticks: 2000}}
-	if got := topProcesses(map[processKey]uint64{}, current, 100, 8, 5); len(got) != 0 {
-		t.Errorf("got %+v, want nothing", got)
 	}
 }

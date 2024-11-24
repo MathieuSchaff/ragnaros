@@ -70,7 +70,7 @@ func (c *collector) collect() (sample, error) {
 	frequencies := readCoreFrequencies(cpuFreqPattern)
 	fastest, limit := fastestCore(frequencies)
 
-	top := topProcesses(c.previousProcesses, processes, elapsedTicks, cpu.cores, topProcessCount)
+	top := topProcesses(c.previousProcesses, processes, elapsedTicks, topProcessCount)
 	// Read the command line only for the few top processes: cheaper than for all.
 	for i := range top {
 		top[i].Command = readCommand(top[i].PID)
