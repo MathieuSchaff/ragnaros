@@ -14,6 +14,10 @@ type sample struct {
 	MemAvailableKB uint64         `json:"mem_available_kb"`
 	SwapUsedKB     uint64         `json:"swap_used_kb"`
 	TempCelsius    float64        `json:"temp_celsius,omitempty"` // 0 when no sensor
+	GPUState       string         `json:"gpu_state,omitempty"`    // "" without NVIDIA GPU
+	GPUPercent     float64        `json:"gpu_percent,omitempty"`
+	GPUTempCelsius float64        `json:"gpu_temp_celsius,omitempty"`
+	GPUPowerWatts  float64        `json:"gpu_power_watts,omitempty"`
 	TopProcesses   []processUsage `json:"top_processes"`
 }
 
@@ -22,6 +26,7 @@ type sample struct {
 type collector struct {
 	previousCPU       cpuTimes
 	previousProcesses map[processKey]uint64
+	gpu               nvidiaGPU
 }
 
 func newCollector() (*collector, error) {
@@ -33,7 +38,11 @@ func newCollector() (*collector, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &collector{previousCPU: cpu, previousProcesses: ticksByProcess(processes)}, nil
+	return &collector{
+		previousCPU:       cpu,
+		previousProcesses: ticksByProcess(processes),
+		gpu:               findNvidiaGPU(pciDevicesPattern),
+	}, nil
 }
 
 func (c *collector) collect() (sample, error) {
@@ -70,6 +79,8 @@ func (c *collector) collect() (sample, error) {
 		top[i].CoreMaxMHz = frequencies[top[i].core].maxMHz
 	}
 
+	gpu := c.gpu.read()
+
 	s := sample{
 		Time:           time.Now(),
 		CPUPercent:     cpuUsage(c.previousCPU, cpu),
@@ -79,6 +90,10 @@ func (c *collector) collect() (sample, error) {
 		MemAvailableKB: memory.availableKB,
 		SwapUsedKB:     memory.swapUsedKB,
 		TempCelsius:    readTemperature(),
+		GPUState:       gpu.state,
+		GPUPercent:     gpu.usagePercent,
+		GPUTempCelsius: gpu.tempCelsius,
+		GPUPowerWatts:  gpu.powerWatts,
 		TopProcesses:   top,
 	}
 

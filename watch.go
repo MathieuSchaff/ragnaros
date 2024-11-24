@@ -154,6 +154,11 @@ func printSample(w io.Writer, s sample) {
 	if s.CoreLimitMHz > 0 {
 		fmt.Fprintf(w, "  fastest core %d/%d MHz", s.FastestCoreMHz, s.CoreLimitMHz)
 	}
+	if s.GPUState == "active" {
+		fmt.Fprintf(w, "  GPU %.0f %% %.0f °C %.0f W", s.GPUPercent, s.GPUTempCelsius, s.GPUPowerWatts)
+	} else if s.GPUState != "" {
+		fmt.Fprintf(w, "  GPU %s", s.GPUState)
+	}
 	fmt.Fprintln(w)
 	for _, p := range s.TopProcesses {
 		fmt.Fprintf(w, "  %7d  %6.1f %%  %s  %s\n", p.PID, p.CPUPercent, formatCoreFrequency(p), p.label())
