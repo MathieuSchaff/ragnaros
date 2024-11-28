@@ -20,8 +20,8 @@ func readMemory() (memoryInfo, error) {
 	return parseMemory(string(data))
 }
 
-// MemAvailable is the kernel estimate of memory usable without swapping,
-// more meaningful than MemFree which ignores reclaimable cache.
+// MemAvailable is the memory programs can still use. MemFree is lower
+// because it ignores the cache, which Linux frees when needed.
 func parseMemory(content string) (memoryInfo, error) {
 	available, err := meminfoValueKB(content, "MemAvailable")
 	if err != nil {

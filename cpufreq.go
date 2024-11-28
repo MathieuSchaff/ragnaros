@@ -9,20 +9,18 @@ import (
 
 const cpuFreqPattern = "/sys/devices/system/cpu/cpu[0-9]*/cpufreq"
 
-// coreFrequency of one core. A busy core far below its maxMHz is often
-// throttled by temperature or by the power profile.
+// A busy core far below maxMHz is usually slowed down by heat.
 type coreFrequency struct {
 	currentMHz int
 	maxMHz     int
 }
 
-// readCoreFrequencies returns the frequencies by core number. It returns an
-// empty map when cpufreq is missing, for example in many virtual machines.
+// readCoreFrequencies returns the speed of each core, by core number.
 func readCoreFrequencies(pattern string) map[int]coreFrequency {
 	frequencies := make(map[int]coreFrequency)
 	dirs, _ := filepath.Glob(pattern)
 	for _, dir := range dirs {
-		// dir looks like ".../cpu12/cpufreq": the core number is in the parent name.
+		// dir looks like ".../cpu12/cpufreq": take 12 from the parent folder.
 		core, err := strconv.Atoi(strings.TrimPrefix(filepath.Base(filepath.Dir(dir)), "cpu"))
 		if err != nil {
 			continue
@@ -50,8 +48,8 @@ func readKHzAsMHz(path string) int {
 	return kHz / 1000
 }
 
-// fastestCore returns the highest current frequency and the highest possible one.
-// Under load, a fastest core well below the limit means the whole CPU is held back.
+// fastestCore returns the speed of the fastest core, and the top speed
+// that any core can reach.
 func fastestCore(frequencies map[int]coreFrequency) (int, int) {
 	var fastest, limit int
 	for _, frequency := range frequencies {

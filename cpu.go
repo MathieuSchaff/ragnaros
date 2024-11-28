@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// cpuTimes holds the cumulative CPU counters read from /proc/stat, in clock ticks.
+// cpuTimes holds the CPU counters of /proc/stat, in ticks. They only go up.
 type cpuTimes struct {
 	idle  uint64
 	total uint64
@@ -55,7 +55,7 @@ func parseCPUTimes(content string) (cpuTimes, error) {
 }
 
 // Fields order: user nice system idle iowait irq softirq steal guest guest_nice.
-// Only the first 8 are summed: guest time is already counted in user and nice.
+// Only the first 8 are added: the last 2 are already inside user and nice.
 func sumCPUFields(fields []string) (uint64, uint64, error) {
 	var idle, total uint64
 	for i, field := range fields {

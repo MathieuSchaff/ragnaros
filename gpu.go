@@ -17,7 +17,7 @@ const (
 )
 
 type gpuReading struct {
-	state        string // "active", "asleep", or what the kernel reports; "" without GPU
+	state        string // "active" or "asleep", "" without GPU
 	usagePercent float64
 	tempCelsius  float64
 	powerWatts   float64
@@ -34,7 +34,7 @@ func findNvidiaGPU(pattern string) nvidiaGPU {
 	for _, dir := range dirs {
 		vendor := readTrimmed(filepath.Join(dir, "vendor"))
 		class := readTrimmed(filepath.Join(dir, "class"))
-		// PCI class 0x03xxxx is a display controller.
+		// Class 0x03... means a graphics card.
 		if vendor == nvidiaVendorID && strings.HasPrefix(class, "0x03") {
 			smiPath, _ := exec.LookPath("nvidia-smi")
 			return nvidiaGPU{pciDir: dir, smiPath: smiPath}
@@ -48,8 +48,8 @@ func (gpu nvidiaGPU) read() gpuReading {
 		return gpuReading{}
 	}
 
-	// nvidia-smi wakes a sleeping GPU, which then heats the CPU through the
-	// heatpipe they share on many laptops. Check the power state first.
+	// Calling nvidia-smi wakes up a sleeping GPU, and the awake GPU heats
+	// the CPU (they share the same heatpipe). So check first if it sleeps.
 	state := readTrimmed(filepath.Join(gpu.pciDir, "power", "runtime_status"))
 	if state == "suspended" {
 		return gpuReading{state: "asleep"}
@@ -58,7 +58,7 @@ func (gpu nvidiaGPU) read() gpuReading {
 		return gpuReading{state: state}
 	}
 
-	// The timeout keeps the watch loop alive if the driver hangs.
+	// Give up after 1 second if the driver is stuck.
 	ctx, cancel := context.WithTimeout(context.Background(), nvidiaSmiTimeout)
 	defer cancel()
 	output, err := exec.CommandContext(ctx, gpu.smiPath,
@@ -72,8 +72,8 @@ func (gpu nvidiaGPU) read() gpuReading {
 	return reading
 }
 
-// parseNvidiaSmi reads "20, 54, 16.66" (usage, temperature, power). Only the
-// first GPU is used. A value shown as "[N/A]" stays 0.
+// parseNvidiaSmi reads "20, 54, 16.66" (usage, temperature, power).
+// A value shown as "[N/A]" stays 0.
 func parseNvidiaSmi(output string) gpuReading {
 	firstLine, _, _ := strings.Cut(output, "\n")
 	values := strings.Split(firstLine, ",")

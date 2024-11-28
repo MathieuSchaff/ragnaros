@@ -1,8 +1,7 @@
 package main
 
-// detector reports a spike once required consecutive samples are high.
-// It fires once per spike and rearms on the first sample that is not high.
-// Deciding what "high" means is left to the caller.
+// detector raises an alert after `required` high samples in a row.
+// Only one alert per spike: it resets on the first normal sample.
 type detector struct {
 	required    int
 	consecutive int

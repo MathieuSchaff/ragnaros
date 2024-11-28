@@ -16,13 +16,13 @@ const historyDuration = 2 * time.Minute
 type watchConfig struct {
 	interval      time.Duration
 	threshold     float64
-	coreThreshold float64 // 0 disables the single process trigger
-	tempThreshold float64 // 0 disables the temperature trigger
+	coreThreshold float64 // 0 = off
+	tempThreshold float64 // 0 = off
 	spikeSamples  int
 	incidentDir   string
 }
 
-// historySize is the number of samples that cover historyDuration.
+// historySize is how many samples fit in two minutes.
 func (config watchConfig) historySize() int {
 	return int(historyDuration / config.interval)
 }
@@ -74,7 +74,7 @@ func runWatch(args []string) error {
 	recent := newHistory(config.historySize())
 	spikes := newDetector(config.spikeSamples)
 
-	// Ctrl+C (SIGINT) or SIGTERM is delivered on this channel instead of killing the program.
+	// Send Ctrl+C to this channel instead of killing the program.
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
@@ -83,11 +83,10 @@ func runWatch(args []string) error {
 
 	fmt.Println("Ragnaros is watching. Press Ctrl+C to stop.")
 	for {
-		// Wait for whichever comes first: a stop signal or the next tick.
+		// Wait for Ctrl+C or the next tick, whichever comes first.
 		select {
 		case <-stop:
-			// The user may stop because the machine is slow: keep a spike
-			// that started but is not long enough yet to be saved.
+			// If the machine is slow right now, save what we have before quitting.
 			if spikes.pendingSpike() {
 				printSaveResult(saveIncident(config.incidentDir, recent.all(), time.Now()))
 			}
@@ -109,9 +108,8 @@ func runWatch(args []string) error {
 	}
 }
 
-// spikeReason tells why a sample is high, or returns "" when it is not.
-// A single-threaded program, like many games, can saturate one core and
-// slow down while the global CPU stays low: hence the per-process check.
+// spikeReason says why a sample counts as high, or returns "".
+// WoW uses only one core: it can lag while the total CPU stays low.
 func spikeReason(s sample, config watchConfig) string {
 	if s.CPUPercent > config.threshold {
 		return fmt.Sprintf("CPU at %.0f %%", s.CPUPercent)
@@ -121,14 +119,14 @@ func spikeReason(s sample, config watchConfig) string {
 		busiest := s.TopProcesses[0]
 		return fmt.Sprintf("%s uses %.0f %% of a core", busiest.Name, busiest.CPUPercent)
 	}
-	// A hot CPU lowers its frequency, so programs slow down at the same usage.
+	// A hot CPU slows itself down.
 	if config.tempThreshold > 0 && s.TempCelsius > config.tempThreshold {
 		return fmt.Sprintf("CPU at %.0f °C", s.TempCelsius)
 	}
 	return ""
 }
 
-// printSaveResult only reports: a failed save must not stop the monitoring.
+// printSaveResult prints the result. A failed save does not stop watch.
 func printSaveResult(path string, err error) {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ragnaros: cannot save incident:", err)
@@ -137,7 +135,7 @@ func printSaveResult(path string, err error) {
 	}
 }
 
-// formatCoreFrequency keeps a fixed width so the commands stay aligned.
+// formatCoreFrequency keeps the same width so the commands line up.
 func formatCoreFrequency(p processUsage) string {
 	if p.CoreMaxMHz == 0 {
 		return fmt.Sprintf("%14s", "")

@@ -12,20 +12,20 @@ import (
 type processStat struct {
 	pid       int
 	name      string
-	startTime uint64 // ticks since boot, used to detect PID reuse
-	ticks     uint64 // user + system CPU time, cumulative
+	startTime uint64 // when it started, to spot a reused PID
+	ticks     uint64 // CPU time used since it started
 	core      int    // core the process last ran on
 }
 
-// processKey identifies a process even if its PID is later reused:
-// a new process with the same PID has a different start time.
+// processKey tells processes apart even when Linux reuses a PID:
+// the new process has another start time.
 type processKey struct {
 	pid       int
 	startTime uint64
 }
 
 // processUsage is the CPU usage of one process between two samples.
-// 100 % means one full core, so the value can exceed 100 on multi-core machines.
+// 100 % = one full core, so it can go above 100.
 type processUsage struct {
 	PID        int     `json:"pid"`
 	Name       string  `json:"name"`
@@ -50,7 +50,7 @@ func readProcesses() ([]processStat, error) {
 		}
 		data, err := os.ReadFile("/proc/" + entry.Name() + "/stat")
 		if err != nil {
-			// The process exited between ReadDir and ReadFile.
+			// The process ended while we were reading.
 			continue
 		}
 		stat, err := parseProcessStat(string(data))
@@ -76,7 +76,7 @@ func parseProcessStat(content string) (processStat, error) {
 		return processStat{}, err
 	}
 
-	// fields[0] is field 3 of the man page (state), so field N is fields[N-3].
+	// fields[0] is field 3 in "man proc", so field N is fields[N-3].
 	fields := strings.Fields(content[nameEnd+1:])
 	if len(fields) < 37 {
 		return processStat{}, fmt.Errorf("stat line too short")
@@ -109,9 +109,8 @@ func parseProcessStat(content string) (processStat, error) {
 
 const maxCommandLength = 60
 
-// readCommand returns the full command line, which tells apart processes that
-// share a short name (for example several "python3"). It returns "" for kernel
-// threads, which have no command line, and for processes that already exited.
+// readCommand returns the full command, like "python3 backup.py".
+// It returns "" for kernel threads and for processes that ended.
 func readCommand(pid int) string {
 	data, err := os.ReadFile("/proc/" + strconv.Itoa(pid) + "/cmdline")
 	if err != nil {
@@ -123,7 +122,7 @@ func readCommand(pid int) string {
 // Arguments in /proc/<pid>/cmdline are separated by NUL bytes.
 func formatCommand(cmdline string) string {
 	command := strings.TrimSpace(strings.ReplaceAll(cmdline, "\x00", " "))
-	runes := []rune(command) // cut on characters, not bytes, to keep UTF-8 valid
+	runes := []rune(command) // cut on letters, not bytes, so accents stay intact
 	if len(runes) > maxCommandLength {
 		return string(runes[:maxCommandLength-3]) + "..."
 	}
@@ -147,7 +146,7 @@ func ticksByProcess(stats []processStat) map[processKey]uint64 {
 }
 
 // topProcesses returns the processes that used the most CPU since the previous
-// sample. elapsedTicks is the time elapsed for one core, in clock ticks.
+// sample. elapsedTicks is the time that passed, in ticks.
 func topProcesses(previous map[processKey]uint64, current []processStat, elapsedTicks float64, limit int) []processUsage {
 	if elapsedTicks <= 0 {
 		return nil
@@ -155,8 +154,7 @@ func topProcesses(previous map[processKey]uint64, current []processStat, elapsed
 
 	var usages []processUsage
 	for _, stat := range current {
-		// A process absent from the previous reading (new, or reused PID)
-		// started since then, so all its CPU time belongs to this interval.
+		// A process not seen last time is new: count all its CPU time.
 		before := previous[processKey{stat.pid, stat.startTime}]
 		if stat.ticks <= before {
 			continue

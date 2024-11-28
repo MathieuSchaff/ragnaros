@@ -9,20 +9,20 @@ type sample struct {
 	Time           time.Time      `json:"time"`
 	CPUPercent     float64        `json:"cpu_percent"`
 	LoadAverage    float64        `json:"load_1m"`
-	FastestCoreMHz int            `json:"fastest_core_mhz,omitempty"` // 0 without cpufreq
+	FastestCoreMHz int            `json:"fastest_core_mhz,omitempty"`
 	CoreLimitMHz   int            `json:"core_limit_mhz,omitempty"`
 	MemAvailableKB uint64         `json:"mem_available_kb"`
 	SwapUsedKB     uint64         `json:"swap_used_kb"`
 	TempCelsius    float64        `json:"temp_celsius,omitempty"` // 0 when no sensor
-	GPUState       string         `json:"gpu_state,omitempty"`    // "" without NVIDIA GPU
+	GPUState       string         `json:"gpu_state,omitempty"`    // "active" or "asleep", "" without GPU
 	GPUPercent     float64        `json:"gpu_percent,omitempty"`
 	GPUTempCelsius float64        `json:"gpu_temp_celsius,omitempty"`
 	GPUPowerWatts  float64        `json:"gpu_power_watts,omitempty"`
 	TopProcesses   []processUsage `json:"top_processes"`
 }
 
-// collector keeps the previous counters: CPU usages are computed from the
-// difference between two successive readings.
+// collector remembers the last reading: CPU usage is the difference
+// between two readings.
 type collector struct {
 	previousCPU       cpuTimes
 	previousProcesses map[processKey]uint64
@@ -63,18 +63,17 @@ func (c *collector) collect() (sample, error) {
 		return sample{}, err
 	}
 
-	// /proc/stat counts ticks for all cores together; dividing by the number
-	// of cores gives the elapsed time of one core, in the same unit as process times.
+	// /proc/stat adds up all cores. Divide by the number of cores to get
+	// the time that passed for one core.
 	elapsedTicks := float64(cpu.total-c.previousCPU.total) / float64(cpu.cores)
 
 	frequencies := readCoreFrequencies(cpuFreqPattern)
 	fastest, limit := fastestCore(frequencies)
 
 	top := topProcesses(c.previousProcesses, processes, elapsedTicks, topProcessCount)
-	// Read the command line only for the few top processes: cheaper than for all.
+	// Only for the top 5: no need to read it for every process.
 	for i := range top {
 		top[i].Command = readCommand(top[i].PID)
-		// A single-threaded program is limited by the speed of its own core.
 		top[i].CoreMHz = frequencies[top[i].core].currentMHz
 		top[i].CoreMaxMHz = frequencies[top[i].core].maxMHz
 	}

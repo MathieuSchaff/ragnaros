@@ -10,7 +10,7 @@ import (
 
 const reportProcessCount = 5
 
-// processSummary tells how often a process appeared in the per-second top list.
+// processSummary sums up one process over the whole incident.
 type processSummary struct {
 	pid         int
 	name        string
@@ -18,7 +18,7 @@ type processSummary struct {
 	appearances int
 	totalCPU    float64 // sum of the per-second percentages
 	maxCPU      float64
-	coreMHzSum  int // to average the frequency of the core it ran on
+	coreMHzSum  int // to get the average speed
 	coreMHzSeen int
 	coreMaxMHz  int
 }
@@ -31,20 +31,19 @@ func (p processSummary) averageCoreMHz() int {
 }
 
 type incidentReport struct {
-	start, end   time.Time
-	sampleCount  int
-	peakCPU      float64
-	peakCPUTime  time.Time
-	peakLoad     float64
-	peakLoadTime time.Time
-	minMemKB     uint64
-	minMemTime   time.Time
-	maxSwapKB    uint64
-	maxSwapTime  time.Time
-	peakTemp     float64 // 0 when the incident has no temperature
-	peakTempTime time.Time
-	// Lowest speed of the fastest core: low under load suggests throttling.
-	minFastestCoreMHz  int // 0 without cpufreq data
+	start, end         time.Time
+	sampleCount        int
+	peakCPU            float64
+	peakCPUTime        time.Time
+	peakLoad           float64
+	peakLoadTime       time.Time
+	minMemKB           uint64
+	minMemTime         time.Time
+	maxSwapKB          uint64
+	maxSwapTime        time.Time
+	peakTemp           float64 // 0 when the incident has no temperature
+	peakTempTime       time.Time
+	minFastestCoreMHz  int
 	minFastestCoreTime time.Time
 	coreLimitMHz       int
 	gpuSamples         int // samples with an NVIDIA GPU state
@@ -77,13 +76,11 @@ func buildReport(samples []sample) (incidentReport, error) {
 
 	first := samples[0]
 	report := incidentReport{
-		start:       first.Time,
-		end:         first.Time,
-		sampleCount: len(samples),
-		peakCPU:     first.CPUPercent,
-		peakCPUTime: first.Time,
-		// Starting from the first sample keeps a valid time even when every
-		// load is 0, as in files written before the load was recorded.
+		start:        first.Time,
+		end:          first.Time,
+		sampleCount:  len(samples),
+		peakCPU:      first.CPUPercent,
+		peakCPUTime:  first.Time,
 		peakLoad:     first.LoadAverage,
 		peakLoadTime: first.Time,
 		minMemKB:     first.MemAvailableKB,
@@ -149,8 +146,7 @@ func addGPU(report *incidentReport, s sample) {
 
 func addAppearances(summaries map[int]*processSummary, usages []processUsage) {
 	for _, usage := range usages {
-		// The incident file has no start time, so a PID reused by another
-		// program is told apart by its name only.
+		// Same PID but another name: a new program got this PID.
 		summary, found := summaries[usage.PID]
 		if !found || summary.name != usage.Name {
 			summary = &processSummary{pid: usage.PID, name: usage.Name}
@@ -170,8 +166,7 @@ func addAppearances(summaries map[int]*processSummary, usages []processUsage) {
 	}
 }
 
-// rankProcesses sorts by CPU used over the whole period, so a short but heavy
-// process ranks above a light one that is always present.
+// rankProcesses puts first the processes that used the most CPU in total.
 func rankProcesses(summaries map[int]*processSummary, limit int) []processSummary {
 	var ranked []processSummary
 	for _, summary := range summaries {

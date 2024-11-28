@@ -13,13 +13,12 @@ func newHistory(maxSize int) *history {
 func (h *history) add(s sample) {
 	h.samples = append(h.samples, s)
 	if len(h.samples) > h.maxSize {
-		// Drop the oldest sample. append later copies the remaining ones
-		// into a new array, so memory stays bounded.
+		// Drop the oldest sample.
 		h.samples = h.samples[1:]
 	}
 }
 
-// all returns a copy, so the caller can keep it while the history changes.
+// all returns a copy, safe to keep while new samples arrive.
 func (h *history) all() []sample {
 	result := make([]sample, len(h.samples))
 	copy(result, h.samples)
