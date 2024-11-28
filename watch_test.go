@@ -50,9 +50,9 @@ func TestSpikeReason(t *testing.T) {
 		want   string
 	}{
 		{"calm", sample{CPUPercent: 20}, ""},
-		{"global CPU", sample{CPUPercent: 95}, "global CPU at 95 %"},
-		{"one saturated core", sample{CPUPercent: 6, TopProcesses: game}, "WoW.exe at 99 % of a core"},
-		{"hot CPU", sample{CPUPercent: 30, TempCelsius: 91}, "temperature at 91 °C"},
+		{"global CPU", sample{CPUPercent: 95}, "CPU at 95 %"},
+		{"one saturated core", sample{CPUPercent: 6, TopProcesses: game}, "WoW.exe uses 99 % of a core"},
+		{"hot CPU", sample{CPUPercent: 30, TempCelsius: 91}, "CPU at 91 °C"},
 		{"warm but fine", sample{CPUPercent: 30, TempCelsius: 90}, ""},
 	}
 	for _, test := range tests {

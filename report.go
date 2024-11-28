@@ -188,33 +188,33 @@ func rankProcesses(summaries map[int]*processSummary, limit int) []processSummar
 
 func printReport(w io.Writer, r incidentReport) {
 	const timeLayout = "2006-01-02 15:04:05"
-	fmt.Fprintf(w, "Period:           %s -> %s (%s, %d samples)\n",
+	fmt.Fprintf(w, "Period:             %s -> %s (%s, %d samples)\n",
 		r.start.Format(timeLayout), r.end.Format(timeLayout), r.end.Sub(r.start).Round(time.Second), r.sampleCount)
-	fmt.Fprintf(w, "CPU peak:         %.1f %% at %s\n", r.peakCPU, r.peakCPUTime.Format("15:04:05"))
-	fmt.Fprintf(w, "Load peak (1 m):  %.2f at %s\n", r.peakLoad, r.peakLoadTime.Format("15:04:05"))
-	fmt.Fprintf(w, "Lowest memory:    %s available at %s\n", formatKB(r.minMemKB), r.minMemTime.Format("15:04:05"))
+	fmt.Fprintf(w, "CPU peak:           %.1f %% at %s\n", r.peakCPU, r.peakCPUTime.Format("15:04:05"))
+	fmt.Fprintf(w, "Load peak:          %.2f at %s\n", r.peakLoad, r.peakLoadTime.Format("15:04:05"))
+	fmt.Fprintf(w, "Lowest free memory: %s at %s\n", formatKB(r.minMemKB), r.minMemTime.Format("15:04:05"))
 	if r.maxSwapKB > 0 {
-		fmt.Fprintf(w, "Max swap used:    %s at %s\n", formatKB(r.maxSwapKB), r.maxSwapTime.Format("15:04:05"))
+		fmt.Fprintf(w, "Most swap used:     %s at %s\n", formatKB(r.maxSwapKB), r.maxSwapTime.Format("15:04:05"))
 	} else {
-		fmt.Fprintln(w, "Max swap used:    none")
+		fmt.Fprintln(w, "Most swap used:     none")
 	}
 	if r.peakTemp > 0 {
-		fmt.Fprintf(w, "Max temperature:  %.0f °C at %s\n", r.peakTemp, r.peakTempTime.Format("15:04:05"))
+		fmt.Fprintf(w, "Hottest CPU:        %.0f °C at %s\n", r.peakTemp, r.peakTempTime.Format("15:04:05"))
 	} else {
-		fmt.Fprintln(w, "Max temperature:  no sensor data")
+		fmt.Fprintln(w, "Hottest CPU:        no sensor")
 	}
 	if r.coreLimitMHz > 0 {
-		fmt.Fprintf(w, "Slowest moment:   fastest core at %d MHz (limit %d) at %s\n",
+		fmt.Fprintf(w, "Lowest CPU speed:   %d MHz (max %d) at %s\n",
 			r.minFastestCoreMHz, r.coreLimitMHz, r.minFastestCoreTime.Format("15:04:05"))
 	}
 	if r.gpuSamples > 0 {
-		fmt.Fprintf(w, "GPU peak:         %.0f %% at %s, max %.0f °C, max %.0f W (asleep in %d/%d samples)\n",
+		fmt.Fprintf(w, "GPU peak:           %.0f %% at %s, up to %.0f °C and %.0f W (asleep %d/%d)\n",
 			r.peakGPUPercent, r.peakGPUTime.Format("15:04:05"), r.maxGPUTempCelsius, r.maxGPUPowerWatts,
 			r.gpuAsleepSamples, r.gpuSamples)
 	}
 
-	fmt.Fprintf(w, "\nMost active processes (ranked by CPU used, SEEN = times in the top %d):\n", topProcessCount)
-	fmt.Fprintf(w, "  %7s  %6s  %8s  %14s  %s\n", "PID", "SEEN", "MAX CPU", "AVG CORE", "COMMAND")
+	fmt.Fprintf(w, "\nBusiest processes (SEEN = times in the top %d):\n", topProcessCount)
+	fmt.Fprintf(w, "  %7s  %6s  %8s  %14s  %s\n", "PID", "SEEN", "MAX CPU", "AVG SPEED", "COMMAND")
 	for _, p := range r.topProcesses {
 		seen := fmt.Sprintf("%d/%d", p.appearances, r.sampleCount)
 		core := ""
@@ -224,6 +224,6 @@ func printReport(w io.Writer, r incidentReport) {
 		fmt.Fprintf(w, "  %7d  %6s  %6.1f %%  %14s  %s\n", p.pid, seen, p.maxCPU, core, p.label)
 	}
 
-	fmt.Fprintln(w, "\nProcess CPU: 100 % means one full core. AVG CORE: mean speed of the core it ran on.")
-	fmt.Fprintln(w, "These are observations of what was running before the spike, not a proof of its cause.")
+	fmt.Fprintln(w, "\n100 % = one full core. AVG SPEED = average speed of the core it ran on.")
+	fmt.Fprintln(w, "This shows what was running, not proof of what caused the slowdown.")
 }

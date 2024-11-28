@@ -102,7 +102,7 @@ func runWatch(args []string) error {
 			reason := spikeReason(s, config)
 			path, err := recordSample(recent, spikes, s, reason != "", config.incidentDir)
 			if path != "" {
-				fmt.Println("Spike:", reason)
+				fmt.Println("Alert:", reason)
 			}
 			printSaveResult(path, err)
 		}
@@ -114,16 +114,16 @@ func runWatch(args []string) error {
 // slow down while the global CPU stays low: hence the per-process check.
 func spikeReason(s sample, config watchConfig) string {
 	if s.CPUPercent > config.threshold {
-		return fmt.Sprintf("global CPU at %.0f %%", s.CPUPercent)
+		return fmt.Sprintf("CPU at %.0f %%", s.CPUPercent)
 	}
 	// TopProcesses is sorted, so the first one is the busiest.
 	if config.coreThreshold > 0 && len(s.TopProcesses) > 0 && s.TopProcesses[0].CPUPercent > config.coreThreshold {
 		busiest := s.TopProcesses[0]
-		return fmt.Sprintf("%s at %.0f %% of a core", busiest.Name, busiest.CPUPercent)
+		return fmt.Sprintf("%s uses %.0f %% of a core", busiest.Name, busiest.CPUPercent)
 	}
 	// A hot CPU lowers its frequency, so programs slow down at the same usage.
 	if config.tempThreshold > 0 && s.TempCelsius > config.tempThreshold {
-		return fmt.Sprintf("temperature at %.0f °C", s.TempCelsius)
+		return fmt.Sprintf("CPU at %.0f °C", s.TempCelsius)
 	}
 	return ""
 }
@@ -146,13 +146,13 @@ func formatCoreFrequency(p processUsage) string {
 }
 
 func printSample(w io.Writer, s sample) {
-	fmt.Fprintf(w, "\n%s  CPU %5.1f %%  load %.2f  available memory %s  swap used %s",
+	fmt.Fprintf(w, "\n%s  CPU %5.1f %%  load %.2f  free memory %s  swap %s",
 		s.Time.Format("15:04:05"), s.CPUPercent, s.LoadAverage, formatKB(s.MemAvailableKB), formatKB(s.SwapUsedKB))
 	if s.TempCelsius > 0 {
-		fmt.Fprintf(w, "  temperature %.0f °C", s.TempCelsius)
+		fmt.Fprintf(w, "  %.0f °C", s.TempCelsius)
 	}
 	if s.CoreLimitMHz > 0 {
-		fmt.Fprintf(w, "  fastest core %d/%d MHz", s.FastestCoreMHz, s.CoreLimitMHz)
+		fmt.Fprintf(w, "  speed %d/%d MHz", s.FastestCoreMHz, s.CoreLimitMHz)
 	}
 	if s.GPUState == "active" {
 		fmt.Fprintf(w, "  GPU %.0f %% %.0f °C %.0f W", s.GPUPercent, s.GPUTempCelsius, s.GPUPowerWatts)

@@ -79,7 +79,7 @@ func TestPrintReportMentionsObservations(t *testing.T) {
 	report, _ := buildReport([]sample{{Time: time.Now(), CPUPercent: 95}})
 	var output strings.Builder
 	printReport(&output, report)
-	if !strings.Contains(output.String(), "not a proof") {
+	if !strings.Contains(output.String(), "not proof") {
 		t.Errorf("report should warn it shows observations only:\n%s", output.String())
 	}
 }
