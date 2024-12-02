@@ -127,3 +127,11 @@ func TestBuildReportGPU(t *testing.T) {
 		t.Errorf("max GPU %v °C %v W", report.maxGPUTempCelsius, report.maxGPUPowerWatts)
 	}
 }
+
+func TestBuildReportKeepsLastAlert(t *testing.T) {
+	samples := []sample{{Alert: "CPU at 91 °C"}, {}, {Alert: "game uses 99 % of a core"}, {}}
+	report, _ := buildReport(samples)
+	if report.alert != "game uses 99 % of a core" {
+		t.Errorf("alert = %q, want the last one", report.alert)
+	}
+}

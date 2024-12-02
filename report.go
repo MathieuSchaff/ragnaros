@@ -33,6 +33,7 @@ func (p processSummary) averageCoreMHz() int {
 type incidentReport struct {
 	start, end         time.Time
 	sampleCount        int
+	alert              string // last alert seen, "" in older files
 	peakCPU            float64
 	peakCPUTime        time.Time
 	peakLoad           float64
@@ -120,6 +121,9 @@ func buildReport(samples []sample) (incidentReport, error) {
 			report.minFastestCoreTime = s.Time
 			report.coreLimitMHz = s.CoreLimitMHz
 		}
+		if s.Alert != "" {
+			report.alert = s.Alert
+		}
 		addGPU(&report, s)
 		addAppearances(summaries, s.TopProcesses)
 	}
@@ -185,6 +189,9 @@ func printReport(w io.Writer, r incidentReport) {
 	const timeLayout = "2006-01-02 15:04:05"
 	fmt.Fprintf(w, "Period:             %s -> %s (%s, %d samples)\n",
 		r.start.Format(timeLayout), r.end.Format(timeLayout), r.end.Sub(r.start).Round(time.Second), r.sampleCount)
+	if r.alert != "" {
+		fmt.Fprintf(w, "Alert:              %s\n", r.alert)
+	}
 	fmt.Fprintf(w, "CPU peak:           %.1f %% at %s\n", r.peakCPU, r.peakCPUTime.Format("15:04:05"))
 	fmt.Fprintf(w, "Load peak:          %.2f at %s\n", r.peakLoad, r.peakLoadTime.Format("15:04:05"))
 	fmt.Fprintf(w, "Lowest free memory: %s at %s\n", formatKB(r.minMemKB), r.minMemTime.Format("15:04:05"))
