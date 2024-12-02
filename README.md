@@ -37,8 +37,8 @@ Options utiles de `watch` (toutes : `./ragnaros watch -h`) :
 Après 5 mesures d'affilée où au moins un de ces cas est vrai :
 
 - CPU total au-dessus de 90 % (`-threshold`) ;
-- un processus au-dessus de 95 % d'un cœur (`-core-threshold`). C'est le cas de
-  WoW : il n'utilise qu'un cœur, donc il rame alors que le CPU total reste à 5 % ;
+- un processus au-dessus de 95 % d'un cœur (`-core-threshold`) : un programme
+  qui n'utilise qu'un cœur peut ramer alors que le CPU total reste à 5 % ;
 - CPU au-dessus de 90 °C (`-temp-threshold`).
 
 Un seul fichier par pic. Si on fait Ctrl+C pendant que ça rame, il enregistre aussi.
@@ -55,7 +55,7 @@ Ragnaros is watching. Press Ctrl+C to stop.
      2491    13.0 %   1100/3500 MHz  /usr/bin/kwin_wayland --wayland-fd 7 --socket wayland-0 -...
 ```
 
-Rapport inventé d'après un raid WoW (notes dans `dev-setup/cheatsheet/octowow-perf.md`) :
+Rapport inventé, pour montrer le format :
 
 ```
 $ ./ragnaros report incidents/incident-20240906-212008.jsonl
@@ -70,7 +70,7 @@ GPU peak:           14 % at 21:19:40, up to 83 °C and 24 W (asleep 0/120)
 
 Busiest processes (SEEN = times in the top 5):
       PID    SEEN   MAX CPU       AVG SPEED  COMMAND
-   412345 120/120   100.3 %   1650/4700 MHz  Z:\OctoWoW\WoW.exe
+   412345 120/120   100.3 %   1650/4700 MHz  ./game
      2491 120/120    21.0 %   1800/4600 MHz  /usr/bin/kwin_wayland --wayland-fd 7 --socket wayland-0 -...
 
 100 % = one full core. AVG SPEED = average speed of the core it ran on.
@@ -81,8 +81,8 @@ This shows what was running, not proof of what caused the slowdown.
 
 - Le rapport montre ce qui tournait, il ne prouve pas la cause.
 - Ce qui se passe avant le lancement de `watch` n'est pas connu.
-- Un programme qui reste à fond toute la session (WoW) ne donne qu'une alerte, au
-  début. Pour les lags au pull, c'est l'alerte température qui compte.
+- Un programme qui reste à fond tout le temps ne donne qu'une alerte, au début.
+  Pour les lags d'après, c'est l'alerte température qui compte.
 - Une compilation déclenche aussi l'alerte « un cœur ».
 - `nvidia-smi` est lancé chaque seconde quand le GPU est réveillé : on le voit
   parfois dans le top.
