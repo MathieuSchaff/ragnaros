@@ -19,6 +19,7 @@ type sample struct {
 	GPUTempCelsius float64        `json:"gpu_temp_celsius,omitempty"`
 	GPUPowerWatts  float64        `json:"gpu_power_watts,omitempty"`
 	TopProcesses   []processUsage `json:"top_processes"`
+	Alert          string         `json:"alert,omitempty"` // why the sample is high, "" if normal
 }
 
 // collector remembers the last reading: CPU usage is the difference

@@ -17,7 +17,10 @@ func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
 	var saved []string
 	for i, cpu := range cpuValues {
 		s := sample{Time: start.Add(time.Duration(i) * time.Second), CPUPercent: cpu, MemAvailableKB: 1000}
-		path, err := recordSample(recent, spikes, s, cpu > 90, dir)
+		if cpu > 90 {
+			s.Alert = "CPU high"
+		}
+		path, err := recordSample(recent, spikes, s, dir)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -41,6 +44,9 @@ func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
 	// The spike is detected on the 5th high sample, index 7: 8 samples saved.
 	if len(samples) != 8 {
 		t.Errorf("incident holds %d samples, want 8", len(samples))
+	}
+	if samples[7].Alert != "CPU high" {
+		t.Errorf("alert not saved in the file: %+v", samples[7])
 	}
 	if !samples[0].Time.Equal(start) || samples[7].CPUPercent != 99 {
 		t.Errorf("unexpected content: first %v, last %+v", samples[0].Time, samples[7])

@@ -97,11 +97,11 @@ func runWatch(args []string) error {
 			if err != nil {
 				return err
 			}
+			s.Alert = spikeReason(s, config)
 			printSample(os.Stdout, s)
-			reason := spikeReason(s, config)
-			path, err := recordSample(recent, spikes, s, reason != "", config.incidentDir)
+			path, err := recordSample(recent, spikes, s, config.incidentDir)
 			if path != "" {
-				fmt.Println("Alert:", reason)
+				fmt.Println("Alert:", s.Alert)
 			}
 			printSaveResult(path, err)
 		}
