@@ -86,7 +86,7 @@ func TestPrintReportMentionsObservations(t *testing.T) {
 
 func TestBuildReportCoreFrequency(t *testing.T) {
 	game := func(coreMHz int) processUsage {
-		return processUsage{PID: 6, Name: "WoW.exe", CPUPercent: 100, CoreMHz: coreMHz, CoreMaxMHz: 4700}
+		return processUsage{PID: 6, Name: "game", CPUPercent: 100, CoreMHz: coreMHz, CoreMaxMHz: 4700}
 	}
 	samples := []sample{
 		{FastestCoreMHz: 4600, CoreLimitMHz: 4700, TopProcesses: []processUsage{game(4600)}},

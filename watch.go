@@ -109,7 +109,7 @@ func runWatch(args []string) error {
 }
 
 // spikeReason says why a sample counts as high, or returns "".
-// WoW uses only one core: it can lag while the total CPU stays low.
+// A program that uses only one core can lag while the total CPU stays low.
 func spikeReason(s sample, config watchConfig) string {
 	if s.CPUPercent > config.threshold {
 		return fmt.Sprintf("CPU at %.0f %%", s.CPUPercent)

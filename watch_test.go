@@ -43,7 +43,7 @@ func TestParseWatchFlagsRejectsBadValues(t *testing.T) {
 
 func TestSpikeReason(t *testing.T) {
 	config := watchConfig{threshold: 90, coreThreshold: 95, tempThreshold: 90}
-	game := []processUsage{{Name: "WoW.exe", CPUPercent: 99}}
+	game := []processUsage{{Name: "game", CPUPercent: 99}}
 	tests := []struct {
 		name   string
 		sample sample
@@ -51,7 +51,7 @@ func TestSpikeReason(t *testing.T) {
 	}{
 		{"calm", sample{CPUPercent: 20}, ""},
 		{"global CPU", sample{CPUPercent: 95}, "CPU at 95 %"},
-		{"one saturated core", sample{CPUPercent: 6, TopProcesses: game}, "WoW.exe uses 99 % of a core"},
+		{"one saturated core", sample{CPUPercent: 6, TopProcesses: game}, "game uses 99 % of a core"},
 		{"hot CPU", sample{CPUPercent: 30, TempCelsius: 91}, "CPU at 91 °C"},
 		{"warm but fine", sample{CPUPercent: 30, TempCelsius: 90}, ""},
 	}
