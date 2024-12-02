@@ -2,7 +2,7 @@ package main
 
 import "testing"
 
-// countIncidents feeds simulated CPU values, high above 90, and returns the indexes that fired.
+// countIncidents sends fake CPU values (high = above 90) and returns where alerts fired.
 func countIncidents(d *detector, values []float64) []int {
 	var fired []int
 	for i, value := range values {
