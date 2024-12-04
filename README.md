@@ -23,6 +23,16 @@ Options utiles de `watch` (toutes : `./ragnaros watch -h`) :
 ./ragnaros watch -dir /tmp/ragnaros         # ailleurs que ./incidents
 ```
 
+Simuler un programme qui sature un seul cœur (comme un jeu), sans charger la
+machine (1 cœur sur 20) :
+
+```sh
+./ragnaros watch                                  # terminal 1
+timeout 10 sh -c 'while :; do :; done'            # terminal 2
+```
+
+Attendu : `Alert: sh uses 100 % of a core`, puis un fichier dans `incidents/`.
+
 ## Ce qu'il mesure, chaque seconde
 
 - CPU total, charge, mémoire libre, swap ;
@@ -41,7 +51,8 @@ Après 5 mesures d'affilée où au moins un de ces cas est vrai :
   qui n'utilise qu'un cœur peut ramer alors que le CPU total reste à 5 % ;
 - CPU au-dessus de 90 °C (`-temp-threshold`).
 
-Un seul fichier par pic. Si on fait Ctrl+C pendant que ça rame, il enregistre aussi.
+Un seul fichier par pic, avec la raison de l'alerte. Si on fait Ctrl+C pendant
+que ça rame, il enregistre aussi.
 
 ## Exemple
 
@@ -60,6 +71,7 @@ Rapport inventé, pour montrer le format :
 ```
 $ ./ragnaros report incidents/incident-20240906-212008.jsonl
 Period:             2024-09-06 21:18:09 -> 2024-09-06 21:20:08 (1m59s, 120 samples)
+Alert:              game uses 100 % of a core
 CPU peak:           9.1 % at 21:20:01
 Load peak:          2.80 at 21:20:05
 Lowest free memory: 41.2 GiB at 21:19:58
