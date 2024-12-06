@@ -18,6 +18,8 @@ type sample struct {
 	GPUPercent     float64        `json:"gpu_percent,omitempty"`
 	GPUTempCelsius float64        `json:"gpu_temp_celsius,omitempty"`
 	GPUPowerWatts  float64        `json:"gpu_power_watts,omitempty"`
+	GPUMemoryMiB   float64        `json:"gpu_memory_mib,omitempty"`
+	GPUMemoryMax   float64        `json:"gpu_memory_max_mib,omitempty"`
 	TopProcesses   []processUsage `json:"top_processes"`
 	Alert          string         `json:"alert,omitempty"` // why the sample is high, "" if normal
 }
@@ -94,6 +96,8 @@ func (c *collector) collect() (sample, error) {
 		GPUPercent:     gpu.usagePercent,
 		GPUTempCelsius: gpu.tempCelsius,
 		GPUPowerWatts:  gpu.powerWatts,
+		GPUMemoryMiB:   gpu.memoryMiB,
+		GPUMemoryMax:   gpu.memoryMaxMiB,
 		TopProcesses:   top,
 	}
 

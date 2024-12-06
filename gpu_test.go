@@ -42,11 +42,11 @@ func TestReadAsleepGPUDoesNotRunNvidiaSmi(t *testing.T) {
 func TestReadActiveGPU(t *testing.T) {
 	dir := t.TempDir()
 	writeFiles(t, map[string]string{dir + "/power/runtime_status": "active\n"})
-	smi := fakeNvidiaSmi(t, "echo '20, 54, 16.66'")
+	smi := fakeNvidiaSmi(t, "echo '20, 54, 16.66, 43, 6144'")
 
 	got := nvidiaGPU{pciDir: dir, smiPath: smi}.read()
 
-	want := gpuReading{state: "active", usagePercent: 20, tempCelsius: 54, powerWatts: 16.66}
+	want := gpuReading{state: "active", usagePercent: 20, tempCelsius: 54, powerWatts: 16.66, memoryMiB: 43, memoryMaxMiB: 6144}
 	if got != want {
 		t.Errorf("got %+v, want %+v", got, want)
 	}

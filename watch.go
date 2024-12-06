@@ -153,7 +153,8 @@ func printSample(w io.Writer, s sample) {
 		fmt.Fprintf(w, "  speed %d/%d MHz", s.FastestCoreMHz, s.CoreLimitMHz)
 	}
 	if s.GPUState == "active" {
-		fmt.Fprintf(w, "  GPU %.0f %% %.0f °C %.0f W", s.GPUPercent, s.GPUTempCelsius, s.GPUPowerWatts)
+		fmt.Fprintf(w, "  GPU %.0f %% %.0f °C %.0f W %.0f/%.0f MiB",
+			s.GPUPercent, s.GPUTempCelsius, s.GPUPowerWatts, s.GPUMemoryMiB, s.GPUMemoryMax)
 	} else if s.GPUState != "" {
 		fmt.Fprintf(w, "  GPU %s", s.GPUState)
 	}

@@ -21,6 +21,8 @@ type gpuReading struct {
 	usagePercent float64
 	tempCelsius  float64
 	powerWatts   float64
+	memoryMiB    float64 // video memory used
+	memoryMaxMiB float64
 }
 
 // nvidiaGPU is found once at start. smiPath is "" when nvidia-smi is not installed.
@@ -62,7 +64,7 @@ func (gpu nvidiaGPU) read() gpuReading {
 	ctx, cancel := context.WithTimeout(context.Background(), nvidiaSmiTimeout)
 	defer cancel()
 	output, err := exec.CommandContext(ctx, gpu.smiPath,
-		"--query-gpu=utilization.gpu,temperature.gpu,power.draw",
+		"--query-gpu=utilization.gpu,temperature.gpu,power.draw,memory.used,memory.total",
 		"--format=csv,noheader,nounits").Output()
 	if err != nil {
 		return gpuReading{state: state}
@@ -72,18 +74,21 @@ func (gpu nvidiaGPU) read() gpuReading {
 	return reading
 }
 
-// parseNvidiaSmi reads "20, 54, 16.66" (usage, temperature, power).
+// parseNvidiaSmi reads "20, 54, 16.66, 43, 6144" (usage, temperature, power,
+// memory used, memory total).
 // A value shown as "[N/A]" stays 0.
 func parseNvidiaSmi(output string) gpuReading {
 	firstLine, _, _ := strings.Cut(output, "\n")
 	values := strings.Split(firstLine, ",")
-	for len(values) < 3 {
+	for len(values) < 5 {
 		values = append(values, "")
 	}
 	return gpuReading{
 		usagePercent: parseOptionalFloat(values[0]),
 		tempCelsius:  parseOptionalFloat(values[1]),
 		powerWatts:   parseOptionalFloat(values[2]),
+		memoryMiB:    parseOptionalFloat(values[3]),
+		memoryMaxMiB: parseOptionalFloat(values[4]),
 	}
 }
 
