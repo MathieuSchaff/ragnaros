@@ -53,6 +53,8 @@ type incidentReport struct {
 	peakGPUTime        time.Time
 	maxGPUTempCelsius  float64
 	maxGPUPowerWatts   float64
+	maxGPUMemoryMiB    float64
+	gpuMemoryMaxMiB    float64
 	topProcesses       []processSummary
 }
 
@@ -146,6 +148,8 @@ func addGPU(report *incidentReport, s sample) {
 	}
 	report.maxGPUTempCelsius = max(report.maxGPUTempCelsius, s.GPUTempCelsius)
 	report.maxGPUPowerWatts = max(report.maxGPUPowerWatts, s.GPUPowerWatts)
+	report.maxGPUMemoryMiB = max(report.maxGPUMemoryMiB, s.GPUMemoryMiB)
+	report.gpuMemoryMaxMiB = max(report.gpuMemoryMaxMiB, s.GPUMemoryMax)
 }
 
 func addAppearances(summaries map[int]*processSummary, usages []processUsage) {
@@ -210,8 +214,9 @@ func printReport(w io.Writer, r incidentReport) {
 			r.minFastestCoreMHz, r.coreLimitMHz, r.minFastestCoreTime.Format("15:04:05"))
 	}
 	if r.gpuSamples > 0 {
-		fmt.Fprintf(w, "GPU peak:           %.0f %% at %s, up to %.0f °C and %.0f W (asleep %d/%d)\n",
+		fmt.Fprintf(w, "GPU peak:           %.0f %% at %s, up to %.0f °C, %.0f W, %.0f/%.0f MiB (asleep %d/%d)\n",
 			r.peakGPUPercent, r.peakGPUTime.Format("15:04:05"), r.maxGPUTempCelsius, r.maxGPUPowerWatts,
+			r.maxGPUMemoryMiB, r.gpuMemoryMaxMiB,
 			r.gpuAsleepSamples, r.gpuSamples)
 	}
 

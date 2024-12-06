@@ -114,7 +114,7 @@ func TestBuildReportGPU(t *testing.T) {
 	samples := []sample{
 		{Time: start, GPUState: "asleep"},
 		{Time: start.Add(time.Second), GPUState: "active", GPUPercent: 14, GPUTempCelsius: 83, GPUPowerWatts: 24},
-		{Time: start.Add(2 * time.Second), GPUState: "active", GPUPercent: 9, GPUTempCelsius: 80, GPUPowerWatts: 30},
+		{Time: start.Add(2 * time.Second), GPUState: "active", GPUPercent: 9, GPUTempCelsius: 80, GPUPowerWatts: 30, GPUMemoryMiB: 910, GPUMemoryMax: 6144},
 	}
 	report, _ := buildReport(samples)
 	if report.gpuSamples != 3 || report.gpuAsleepSamples != 1 {
@@ -122,6 +122,9 @@ func TestBuildReportGPU(t *testing.T) {
 	}
 	if report.peakGPUPercent != 14 || !report.peakGPUTime.Equal(start.Add(time.Second)) {
 		t.Errorf("GPU peak %v at %v", report.peakGPUPercent, report.peakGPUTime)
+	}
+	if report.maxGPUMemoryMiB != 910 || report.gpuMemoryMaxMiB != 6144 {
+		t.Errorf("GPU memory %v/%v MiB", report.maxGPUMemoryMiB, report.gpuMemoryMaxMiB)
 	}
 	if report.maxGPUTempCelsius != 83 || report.maxGPUPowerWatts != 30 {
 		t.Errorf("max GPU %v °C %v W", report.maxGPUTempCelsius, report.maxGPUPowerWatts)
