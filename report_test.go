@@ -114,7 +114,7 @@ func TestBuildReportGPU(t *testing.T) {
 	samples := []sample{
 		{Time: start, GPUState: "asleep"},
 		{Time: start.Add(time.Second), GPUState: "active", GPUPercent: 14, GPUTempCelsius: 83, GPUPowerWatts: 24},
-		{Time: start.Add(2 * time.Second), GPUState: "active", GPUPercent: 9, GPUTempCelsius: 80, GPUPowerWatts: 30, GPUMemoryMiB: 910, GPUMemoryMax: 6144},
+		{Time: start.Add(2 * time.Second), GPUState: "active", GPUPercent: 9, GPUTempCelsius: 80, GPUPowerWatts: 30, GPUMemoryMiB: 910, GPUMemoryMaxMiB: 6144},
 	}
 	report, _ := buildReport(samples)
 	if report.gpuSamples != 3 || report.gpuAsleepSamples != 1 {

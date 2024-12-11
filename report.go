@@ -149,7 +149,7 @@ func addGPU(report *incidentReport, s sample) {
 	report.maxGPUTempCelsius = max(report.maxGPUTempCelsius, s.GPUTempCelsius)
 	report.maxGPUPowerWatts = max(report.maxGPUPowerWatts, s.GPUPowerWatts)
 	report.maxGPUMemoryMiB = max(report.maxGPUMemoryMiB, s.GPUMemoryMiB)
-	report.gpuMemoryMaxMiB = max(report.gpuMemoryMaxMiB, s.GPUMemoryMax)
+	report.gpuMemoryMaxMiB = max(report.gpuMemoryMaxMiB, s.GPUMemoryMaxMiB)
 }
 
 func addAppearances(summaries map[int]*processSummary, usages []processUsage) {
