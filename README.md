@@ -38,7 +38,7 @@ Attendu : `Alert: sh uses 100 % of a core`, puis un fichier dans `incidents/`.
 - CPU total, charge, mémoire libre, swap ;
 - température du CPU (capteur `coretemp`) ;
 - vitesse des cœurs : un cœur chargé loin de son max, c'est souvent la chaleur ;
-- GPU NVIDIA via `nvidia-smi`, seulement s'il est déjà réveillé (l'appeler
+- GPU NVIDIA (utilisation, température, watts, mémoire) via `nvidia-smi`, seulement s'il est déjà réveillé (l'appeler
   réveillerait la carte, qui chaufferait le CPU) ;
 - les 5 processus qui prennent le plus de CPU (100 % = un cœur entier).
 
@@ -60,7 +60,7 @@ que ça rame, il enregistre aussi.
 $ ./ragnaros watch
 Ragnaros is watching. Press Ctrl+C to stop.
 
-17:40:39  CPU   9.6 %  load 1.99  free memory 43.3 GiB  swap 0 MiB  54 °C  speed 1600/4700 MHz  GPU 10 % 53 °C 17 W
+17:40:39  CPU   9.6 %  load 1.99  free memory 43.3 GiB  swap 0 MiB  54 °C  speed 1600/4700 MHz  GPU 10 % 53 °C 17 W 43/6144 MiB
     13504    43.1 %   1600/4700 MHz  /opt/google/chrome/chrome --type=renderer --crashpad-hand...
      4141    24.0 %   1204/3500 MHz  /opt/google/chrome/chrome
      2491    13.0 %   1100/3500 MHz  /usr/bin/kwin_wayland --wayland-fd 7 --socket wayland-0 -...
@@ -78,7 +78,7 @@ Lowest free memory: 41.2 GiB at 21:19:58
 Most swap used:     none
 Hottest CPU:        91 °C at 21:20:04
 Lowest CPU speed:   2697 MHz (max 4700) at 21:20:03
-GPU peak:           14 % at 21:19:40, up to 83 °C and 24 W (asleep 0/120)
+GPU peak:           14 % at 21:19:40, up to 83 °C, 24 W, 910/6144 MiB (asleep 0/120)
 
 Busiest processes (SEEN = times in the top 5):
       PID    SEEN   MAX CPU       AVG SPEED  COMMAND
@@ -99,6 +99,10 @@ This shows what was running, not proof of what caused the slowdown.
 - `nvidia-smi` est lancé chaque seconde quand le GPU est réveillé : on le voit
   parfois dans le top.
 - Les noms trop longs sont coupés à 60 caractères.
+- Pas de détail cœur par cœur : Linux déplace un programme d'un cœur à l'autre
+  plusieurs fois par seconde, donc un seul thread à 100 % apparaît comme 3 ou 4
+  cœurs à moitié occupés. Le % par processus (100 % = un cœur) et la vitesse de
+  son cœur sont plus fiables.
 
 ## Tests
 
