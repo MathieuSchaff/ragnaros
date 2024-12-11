@@ -17,7 +17,7 @@ const (
 )
 
 type gpuReading struct {
-	state        string // "active" or "asleep", "" without GPU
+	state        string // "active", "asleep" or "no data", "" without GPU
 	usagePercent float64
 	tempCelsius  float64
 	powerWatts   float64
@@ -57,7 +57,7 @@ func (gpu nvidiaGPU) read() gpuReading {
 		return gpuReading{state: "asleep"}
 	}
 	if gpu.smiPath == "" {
-		return gpuReading{state: state}
+		return gpuReading{state: "no data"}
 	}
 
 	// Give up after 1 second if the driver is stuck.
@@ -67,7 +67,7 @@ func (gpu nvidiaGPU) read() gpuReading {
 		"--query-gpu=utilization.gpu,temperature.gpu,power.draw,memory.used,memory.total",
 		"--format=csv,noheader,nounits").Output()
 	if err != nil {
-		return gpuReading{state: state}
+		return gpuReading{state: "no data"}
 	}
 	reading := parseNvidiaSmi(string(output))
 	reading.state = "active"

@@ -66,3 +66,15 @@ func fakeNvidiaSmi(t *testing.T, body string) string {
 	}
 	return path
 }
+
+func TestReadGPUWhenNvidiaSmiFails(t *testing.T) {
+	dir := t.TempDir()
+	writeFiles(t, map[string]string{dir + "/power/runtime_status": "active\n"})
+	smi := fakeNvidiaSmi(t, "exit 1")
+
+	got := nvidiaGPU{pciDir: dir, smiPath: smi}.read()
+
+	if got != (gpuReading{state: "no data"}) {
+		t.Errorf("got %+v, want no data instead of zeros", got)
+	}
+}

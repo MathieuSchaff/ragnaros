@@ -14,7 +14,7 @@ type sample struct {
 	MemAvailableKB uint64         `json:"mem_available_kb"`
 	SwapUsedKB     uint64         `json:"swap_used_kb"`
 	TempCelsius    float64        `json:"temp_celsius,omitempty"` // 0 when no sensor
-	GPUState       string         `json:"gpu_state,omitempty"`    // "active" or "asleep", "" without GPU
+	GPUState       string         `json:"gpu_state,omitempty"`    // "active", "asleep" or "no data", "" without GPU
 	GPUPercent     float64        `json:"gpu_percent,omitempty"`
 	GPUTempCelsius float64        `json:"gpu_temp_celsius,omitempty"`
 	GPUPowerWatts  float64        `json:"gpu_power_watts,omitempty"`
