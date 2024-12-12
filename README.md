@@ -67,24 +67,25 @@ Ragnaros is watching. Press Ctrl+C to stop.
      2491    13.0 %   1100/3500 MHz  /usr/bin/kwin_wayland --wayland-fd 7 --socket wayland-0 -...
 ```
 
-Rapport inventé, pour montrer le format :
+Rapport après `timeout 8 sh -c 'while :; do :; done'` :
 
 ```
-$ ./ragnaros report incidents/incident-20240906-212008.jsonl
-Period:             2024-09-06 21:18:09 -> 2024-09-06 21:20:08 (1m59s, 120 samples)
-Alert:              game uses 100 % of a core
-CPU peak:           9.1 % at 21:20:01
-Load peak:          2.80 at 21:20:05
-Lowest free memory: 41.2 GiB at 21:19:58
+$ ./ragnaros report incidents/incident-20240906-183339.jsonl
+Incident file: incidents/incident-20240906-183339.jsonl
+Period:             2024-09-06 18:33:33 -> 2024-09-06 18:33:39 (6s, 7 samples)
+Alert:              sh uses 101 % of a core
+CPU peak:           7.0 % at 18:33:39
+Load peak:          2.00 at 18:33:33
+Lowest free memory: 45.4 GiB at 18:33:36
 Most swap used:     none
-Hottest CPU:        91 °C at 21:20:04
-Lowest CPU speed:   2697 MHz (max 4700) at 21:20:03
-GPU peak:           14 % at 21:19:40, up to 83 °C, 24 W, 910/6144 MiB (asleep 0/120)
+Hottest CPU:        66 °C at 18:33:37
+Lowest CPU speed:   3000 MHz (max 4700) at 18:33:33
+GPU peak:           13 % at 18:33:37, up to 52 °C, 16 W, 43/6144 MiB (asleep 0/7)
 
 Busiest processes (SEEN = times in the top 5):
       PID    SEEN   MAX CPU       AVG SPEED  COMMAND
-   412345 120/120   100.3 %   1650/4700 MHz  ./game
-     2491 120/120    21.0 %   1800/4600 MHz  /usr/bin/kwin_wayland --wayland-fd 7 --socket wayland-0 -...
+   351250     5/7   100.8 %   2999/4700 MHz  sh -c while :; do :; done
+      154     7/7     5.0 %   1100/4600 MHz  irq/9-acpi
 
 100 % = one full core. AVG SPEED = average speed of the core it ran on.
 This shows what was running, not proof of what caused the slowdown.
