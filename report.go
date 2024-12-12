@@ -214,10 +214,12 @@ func printReport(w io.Writer, r incidentReport) {
 			r.minFastestCoreMHz, r.coreLimitMHz, r.minFastestCoreTime.Format("15:04:05"))
 	}
 	if r.gpuSamples > 0 {
-		fmt.Fprintf(w, "GPU peak:           %.0f %% at %s, up to %.0f °C, %.0f W, %.0f/%.0f MiB (asleep %d/%d)\n",
-			r.peakGPUPercent, r.peakGPUTime.Format("15:04:05"), r.maxGPUTempCelsius, r.maxGPUPowerWatts,
-			r.maxGPUMemoryMiB, r.gpuMemoryMaxMiB,
-			r.gpuAsleepSamples, r.gpuSamples)
+		fmt.Fprintf(w, "GPU peak:           %.0f %% at %s, up to %.0f °C, %.0f W",
+			r.peakGPUPercent, r.peakGPUTime.Format("15:04:05"), r.maxGPUTempCelsius, r.maxGPUPowerWatts)
+		if r.gpuMemoryMaxMiB > 0 {
+			fmt.Fprintf(w, ", %.0f/%.0f MiB", r.maxGPUMemoryMiB, r.gpuMemoryMaxMiB)
+		}
+		fmt.Fprintf(w, " (asleep %d/%d)\n", r.gpuAsleepSamples, r.gpuSamples)
 	}
 
 	fmt.Fprintf(w, "\nBusiest processes (SEEN = times in the top %d):\n", topProcessCount)
