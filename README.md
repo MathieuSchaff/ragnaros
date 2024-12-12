@@ -38,8 +38,9 @@ Attendu : `Alert: sh uses 100 % of a core`, puis un fichier dans `incidents/`.
 - CPU total, charge, mémoire libre, swap ;
 - température du CPU (capteur `coretemp`) ;
 - vitesse des cœurs : un cœur chargé loin de son max, c'est souvent la chaleur ;
-- GPU NVIDIA (utilisation, température, watts, mémoire) via `nvidia-smi`, seulement s'il est déjà réveillé (l'appeler
-  réveillerait la carte, qui chaufferait le CPU) ;
+- GPU NVIDIA (utilisation, température, watts, mémoire) via `nvidia-smi`,
+  seulement s'il est déjà réveillé : l'appeler réveillerait la carte, qui
+  chaufferait le CPU ;
 - les 5 processus qui prennent le plus de CPU (100 % = un cœur entier).
 
 ## Quand il enregistre
@@ -91,7 +92,6 @@ This shows what was running, not proof of what caused the slowdown.
 
 ## À savoir
 
-- Le rapport montre ce qui tournait, il ne prouve pas la cause.
 - Ce qui se passe avant le lancement de `watch` n'est pas connu.
 - Un programme qui reste à fond tout le temps ne donne qu'une alerte, au début.
   Pour les lags d'après, c'est l'alerte température qui compte.
