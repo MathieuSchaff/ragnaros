@@ -16,7 +16,7 @@ type processSummary struct {
 	name        string
 	label       string // command line if known, else name
 	appearances int
-	totalCPU    float64 // sum of the per-second percentages
+	totalCPU    float64 // sum of the percentages of all samples
 	maxCPU      float64
 	coreMHzSum  int // to get the average speed
 	coreMHzSeen int

@@ -74,9 +74,8 @@ func (gpu nvidiaGPU) read() gpuReading {
 	return reading
 }
 
-// parseNvidiaSmi reads "20, 54, 16.66, 43, 6144" (usage, temperature, power,
-// memory used, memory total).
-// A value shown as "[N/A]" stays 0.
+// parseNvidiaSmi reads "20, 54, 16.66, 43, 6144": usage, temperature, power,
+// memory used and memory total. A value shown as "[N/A]" stays 0.
 func parseNvidiaSmi(output string) gpuReading {
 	firstLine, _, _ := strings.Cut(output, "\n")
 	values := strings.Split(firstLine, ",")
