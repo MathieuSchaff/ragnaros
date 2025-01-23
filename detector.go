@@ -28,7 +28,7 @@ func (d *detector) update(high bool) bool {
 	return false
 }
 
-// pendingSpike is true when samples are high but no incident was saved yet.
-func (d *detector) pendingSpike() bool {
+// pendingAlert is true when samples are high but no incident was saved yet.
+func (d *detector) pendingAlert() bool {
 	return d.consecutive > 0 && !d.triggered
 }

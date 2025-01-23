@@ -50,9 +50,9 @@ func readIncident(path string) ([]sample, error) {
 
 // recordSample adds a sample to the history and saves the history when a spike starts.
 // It returns the incident file path, or "" when nothing was saved.
-func recordSample(recent *history, spikes *detector, s sample, dir string) (string, error) {
+func recordSample(recent *history, alerts *detector, s sample, dir string) (string, error) {
 	recent.add(s)
-	if !spikes.update(s.Alert != "") {
+	if !alerts.update(s.Alert != "") {
 		return "", nil
 	}
 	return saveIncident(dir, recent.all(), s.Time)

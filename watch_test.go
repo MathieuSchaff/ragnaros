@@ -7,7 +7,7 @@ func TestParseWatchFlagsDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if config.threshold != 90 || config.coreThreshold != 95 || config.tempThreshold != 90 || config.spikeSamples != 5 || config.incidentDir != "incidents" {
+	if config.threshold != 90 || config.coreThreshold != 95 || config.tempThreshold != 90 || config.alertSamples != 5 || config.incidentDir != "incidents" {
 		t.Errorf("got %+v", config)
 	}
 	if config.historySize() != 120 {
@@ -41,7 +41,7 @@ func TestParseWatchFlagsRejectsBadValues(t *testing.T) {
 	}
 }
 
-func TestSpikeReason(t *testing.T) {
+func TestAlertReason(t *testing.T) {
 	config := watchConfig{threshold: 90, coreThreshold: 95, tempThreshold: 90}
 	game := []processUsage{{Name: "game", CPUPercent: 99}}
 	tests := []struct {
@@ -56,13 +56,13 @@ func TestSpikeReason(t *testing.T) {
 		{"warm but fine", sample{CPUPercent: 30, TempCelsius: 90}, ""},
 	}
 	for _, test := range tests {
-		if got := spikeReason(test.sample, config); got != test.want {
+		if got := alertReason(test.sample, config); got != test.want {
 			t.Errorf("%s: got %q, want %q", test.name, got, test.want)
 		}
 	}
 
 	config.coreThreshold = 0
-	if got := spikeReason(sample{CPUPercent: 6, TopProcesses: game}, config); got != "" {
+	if got := alertReason(sample{CPUPercent: 6, TopProcesses: game}, config); got != "" {
 		t.Errorf("disabled core trigger: got %q", got)
 	}
 }

@@ -17,7 +17,7 @@ type watchConfig struct {
 	threshold     float64
 	coreThreshold float64 // 0 = off
 	tempThreshold float64 // 0 = off
-	spikeSamples  int
+	alertSamples  int
 	incidentDir   string
 }
 
@@ -33,7 +33,7 @@ func parseWatchFlags(args []string) (watchConfig, error) {
 	flags.Float64Var(&config.threshold, "threshold", 90, "global CPU percent above which a sample counts as high")
 	flags.Float64Var(&config.coreThreshold, "core-threshold", 95, "process CPU percent (100 = one core) that counts as high, 0 to disable")
 	flags.Float64Var(&config.tempThreshold, "temp-threshold", 90, "temperature in °C that counts as high, 0 to disable")
-	flags.IntVar(&config.spikeSamples, "samples", 5, "consecutive high samples that make an incident")
+	flags.IntVar(&config.alertSamples, "samples", 5, "consecutive high samples that make an incident")
 	flags.StringVar(&config.incidentDir, "dir", "incidents", "folder where incident files are written")
 	if err := flags.Parse(args); err != nil {
 		return watchConfig{}, err
@@ -51,7 +51,7 @@ func parseWatchFlags(args []string) (watchConfig, error) {
 	if config.tempThreshold < 0 {
 		return watchConfig{}, fmt.Errorf("-temp-threshold must be 0 or more")
 	}
-	if config.spikeSamples < 1 || config.spikeSamples > config.historySize() {
+	if config.alertSamples < 1 || config.alertSamples > config.historySize() {
 		return watchConfig{}, fmt.Errorf("-samples must be between 1 and %d for this interval", config.historySize())
 	}
 	return config, nil
@@ -71,7 +71,7 @@ func runWatch(args []string) error {
 		return err
 	}
 	recent := newHistory(config.historySize())
-	spikes := newDetector(config.spikeSamples)
+	alerts := newDetector(config.alertSamples)
 
 	// Send Ctrl+C to this channel instead of killing the program.
 	stop := make(chan os.Signal, 1)
@@ -86,7 +86,7 @@ func runWatch(args []string) error {
 		select {
 		case <-stop:
 			// If the machine is slow right now, save what we have before quitting.
-			if spikes.pendingSpike() {
+			if alerts.pendingAlert() {
 				printSaveResult(saveIncident(config.incidentDir, recent.all(), time.Now()))
 			}
 			fmt.Println("\nStopped.")
@@ -96,9 +96,9 @@ func runWatch(args []string) error {
 			if err != nil {
 				return err
 			}
-			s.Alert = spikeReason(s, config)
+			s.Alert = alertReason(s, config)
 			printSample(os.Stdout, s)
-			path, err := recordSample(recent, spikes, s, config.incidentDir)
+			path, err := recordSample(recent, alerts, s, config.incidentDir)
 			if path != "" {
 				fmt.Println("Alert:", s.Alert)
 			}
@@ -107,9 +107,9 @@ func runWatch(args []string) error {
 	}
 }
 
-// spikeReason says why a sample counts as high, or returns "".
+// alertReason says why a sample counts as high, or returns "".
 // A program that uses only one core can lag while the total CPU stays low.
-func spikeReason(s sample, config watchConfig) string {
+func alertReason(s sample, config watchConfig) string {
 	if s.CPUPercent > config.threshold {
 		return fmt.Sprintf("CPU at %.0f %%", s.CPUPercent)
 	}
