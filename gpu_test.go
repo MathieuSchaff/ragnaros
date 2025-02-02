@@ -59,14 +59,6 @@ func TestParseNvidiaSmiMissingValues(t *testing.T) {
 	}
 }
 
-func fakeNvidiaSmi(t *testing.T, body string) string {
-	path := filepath.Join(t.TempDir(), "nvidia-smi")
-	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+body+"\n"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	return path
-}
-
 func TestReadGPUWhenNvidiaSmiFails(t *testing.T) {
 	dir := t.TempDir()
 	writeFiles(t, map[string]string{dir + "/power/runtime_status": "active\n"})
