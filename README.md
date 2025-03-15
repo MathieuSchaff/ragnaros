@@ -10,7 +10,7 @@ Fait pour mon portable : Intel i7-12700H + RTX 3060, Linux. Go, sans dépendance
 ## Lancer
 
 ```sh
-go build -o ragnaros .
+make build                           # ou : go build -o ragnaros .
 ./ragnaros watch                     # Ctrl+C pour arrêter
 ./ragnaros report incidents/incident-20240906-212008.jsonl
 ```
@@ -108,7 +108,7 @@ This shows what was running, not proof of what caused the slowdown.
 ## Tests
 
 ```sh
-go test ./...
+make test                            # go vet + go test
 ```
 
 Données inventées, sauf un test qui lit le vrai `/proc` une fois. Rien ne charge
