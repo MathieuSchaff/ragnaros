@@ -1,6 +1,10 @@
 package main
 
-import "time"
+import (
+	"time"
+
+	"ragnaros/internal/system"
+)
 
 const topProcessCount = 5
 
@@ -37,7 +41,7 @@ func (c *collector) collect() (sample, error) {
 	if err != nil {
 		return sample{}, err
 	}
-	load, err := readLoadAverage()
+	load, err := system.ReadLoadAverage()
 	if err != nil {
 		return sample{}, err
 	}

@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"fmt"
@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-// readLoadAverage returns the load of the last minute: about how many
+// ReadLoadAverage returns the load of the last minute: about how many
 // tasks were running or waiting (for the CPU or the disk).
-func readLoadAverage() (float64, error) {
+func ReadLoadAverage() (float64, error) {
 	data, err := os.ReadFile("/proc/loadavg")
 	if err != nil {
 		return 0, err
