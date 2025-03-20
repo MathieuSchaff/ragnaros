@@ -1,4 +1,4 @@
-package main
+package system
 
 import "testing"
 
@@ -9,7 +9,7 @@ func TestParseMemory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.availableKB != 8000000 || got.swapUsedKB != 1000000 {
+	if got.AvailableKB != 8000000 || got.SwapUsedKB != 1000000 {
 		t.Errorf("got %+v, want 8000000 available and 1000000 swap used", got)
 	}
 }
@@ -19,8 +19,8 @@ func TestParseMemoryWithoutSwap(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.swapUsedKB != 0 {
-		t.Errorf("swapUsedKB = %d, want 0", got.swapUsedKB)
+	if got.SwapUsedKB != 0 {
+		t.Errorf("SwapUsedKB = %d, want 0", got.SwapUsedKB)
 	}
 }
 
@@ -31,10 +31,10 @@ func TestParseMemoryMissing(t *testing.T) {
 }
 
 func TestFormatKB(t *testing.T) {
-	if got := formatKB(512 * 1024); got != "512 MiB" {
+	if got := FormatKB(512 * 1024); got != "512 MiB" {
 		t.Errorf("got %q", got)
 	}
-	if got := formatKB(3 * 1024 * 1024); got != "3.0 GiB" {
+	if got := FormatKB(3 * 1024 * 1024); got != "3.0 GiB" {
 		t.Errorf("got %q", got)
 	}
 }

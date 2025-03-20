@@ -6,6 +6,8 @@ import (
 	"os"
 	"sort"
 	"time"
+
+	"ragnaros/internal/system"
 )
 
 const reportProcessCount = 5
@@ -198,9 +200,9 @@ func printReport(w io.Writer, r incidentReport) {
 	}
 	fmt.Fprintf(w, "CPU peak:           %.1f %% at %s\n", r.peakCPU, r.peakCPUTime.Format("15:04:05"))
 	fmt.Fprintf(w, "Load peak:          %.2f at %s\n", r.peakLoad, r.peakLoadTime.Format("15:04:05"))
-	fmt.Fprintf(w, "Lowest free memory: %s at %s\n", formatKB(r.minMemKB), r.minMemTime.Format("15:04:05"))
+	fmt.Fprintf(w, "Lowest free memory: %s at %s\n", system.FormatKB(r.minMemKB), r.minMemTime.Format("15:04:05"))
 	if r.maxSwapKB > 0 {
-		fmt.Fprintf(w, "Most swap used:     %s at %s\n", formatKB(r.maxSwapKB), r.maxSwapTime.Format("15:04:05"))
+		fmt.Fprintf(w, "Most swap used:     %s at %s\n", system.FormatKB(r.maxSwapKB), r.maxSwapTime.Format("15:04:05"))
 	} else {
 		fmt.Fprintln(w, "Most swap used:     none")
 	}

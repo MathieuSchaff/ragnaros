@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"ragnaros/internal/system"
 )
 
 // printSaveResult prints the result. A failed save does not stop watch.
@@ -25,7 +27,7 @@ func formatCoreFrequency(p processUsage) string {
 
 func printSample(w io.Writer, s sample) {
 	fmt.Fprintf(w, "\n%s  CPU %5.1f %%  load %.2f  free memory %s  swap %s",
-		s.Time.Format("15:04:05"), s.CPUPercent, s.LoadAverage, formatKB(s.MemAvailableKB), formatKB(s.SwapUsedKB))
+		s.Time.Format("15:04:05"), s.CPUPercent, s.LoadAverage, system.FormatKB(s.MemAvailableKB), system.FormatKB(s.SwapUsedKB))
 	if s.TempCelsius > 0 {
 		fmt.Fprintf(w, "  %.0f °C", s.TempCelsius)
 	}

@@ -37,7 +37,7 @@ func (c *collector) collect() (sample, error) {
 	if err != nil {
 		return sample{}, err
 	}
-	memory, err := readMemory()
+	memory, err := system.ReadMemory()
 	if err != nil {
 		return sample{}, err
 	}
@@ -73,8 +73,8 @@ func (c *collector) collect() (sample, error) {
 		LoadAverage:     load,
 		FastestCoreMHz:  fastest,
 		CoreLimitMHz:    limit,
-		MemAvailableKB:  memory.availableKB,
-		SwapUsedKB:      memory.swapUsedKB,
+		MemAvailableKB:  memory.AvailableKB,
+		SwapUsedKB:      memory.SwapUsedKB,
 		TempCelsius:     readCPUTemperature(hwmonPattern),
 		GPUState:        gpu.state,
 		GPUPercent:      gpu.usagePercent,

@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"fmt"
@@ -7,38 +7,38 @@ import (
 	"strings"
 )
 
-type memoryInfo struct {
-	availableKB uint64
-	swapUsedKB  uint64
+type MemoryInfo struct {
+	AvailableKB uint64
+	SwapUsedKB  uint64
 }
 
-func readMemory() (memoryInfo, error) {
+func ReadMemory() (MemoryInfo, error) {
 	data, err := os.ReadFile("/proc/meminfo")
 	if err != nil {
-		return memoryInfo{}, err
+		return MemoryInfo{}, err
 	}
 	return parseMemory(string(data))
 }
 
 // MemAvailable is the memory programs can still use. MemFree is lower
 // because it ignores the cache, which Linux frees when needed.
-func parseMemory(content string) (memoryInfo, error) {
+func parseMemory(content string) (MemoryInfo, error) {
 	available, err := meminfoValueKB(content, "MemAvailable")
 	if err != nil {
-		return memoryInfo{}, err
+		return MemoryInfo{}, err
 	}
 	swapTotal, err := meminfoValueKB(content, "SwapTotal")
 	if err != nil {
-		return memoryInfo{}, err
+		return MemoryInfo{}, err
 	}
 	swapFree, err := meminfoValueKB(content, "SwapFree")
 	if err != nil {
-		return memoryInfo{}, err
+		return MemoryInfo{}, err
 	}
 	if swapFree > swapTotal {
 		swapFree = swapTotal
 	}
-	return memoryInfo{availableKB: available, swapUsedKB: swapTotal - swapFree}, nil
+	return MemoryInfo{AvailableKB: available, SwapUsedKB: swapTotal - swapFree}, nil
 }
 
 func meminfoValueKB(content, key string) (uint64, error) {
@@ -52,7 +52,7 @@ func meminfoValueKB(content, key string) (uint64, error) {
 	return 0, fmt.Errorf("no %s line in /proc/meminfo", key)
 }
 
-func formatKB(kb uint64) string {
+func FormatKB(kb uint64) string {
 	mib := float64(kb) / 1024
 	if mib < 1024 {
 		return fmt.Sprintf("%.0f MiB", mib)
