@@ -75,7 +75,7 @@ func (c *collector) collect() (sample, error) {
 		CoreLimitMHz:    limit,
 		MemAvailableKB:  memory.AvailableKB,
 		SwapUsedKB:      memory.SwapUsedKB,
-		TempCelsius:     readCPUTemperature(hwmonPattern),
+		TempCelsius:     system.ReadCPUTemperature(system.HwmonPattern),
 		GPUState:        gpu.state,
 		GPUPercent:      gpu.usagePercent,
 		GPUTempCelsius:  gpu.tempCelsius,

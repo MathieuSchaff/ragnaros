@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"os"
@@ -35,7 +35,7 @@ func TestReadCPUTemperaturePicksCPUSensor(t *testing.T) {
 		dir + "/hwmon1/temp1_input": "55000\n",
 		dir + "/hwmon1/temp2_input": "61000\n",
 	})
-	if got := readCPUTemperature(dir + "/hwmon*"); got != 61 {
+	if got := ReadCPUTemperature(dir + "/hwmon*"); got != 61 {
 		t.Errorf("got %v, want 61", got)
 	}
 }
@@ -46,7 +46,7 @@ func TestReadCPUTemperatureWithoutCPUSensor(t *testing.T) {
 		dir + "/hwmon0/name":        "nvme\n",
 		dir + "/hwmon0/temp1_input": "70000\n",
 	})
-	if got := readCPUTemperature(dir + "/hwmon*"); got != 0 {
+	if got := ReadCPUTemperature(dir + "/hwmon*"); got != 0 {
 		t.Errorf("got %v, want 0", got)
 	}
 }

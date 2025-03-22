@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"os"
@@ -7,11 +7,11 @@ import (
 	"strings"
 )
 
-const hwmonPattern = "/sys/class/hwmon/hwmon*"
+const HwmonPattern = "/sys/class/hwmon/hwmon*"
 
-// readCPUTemperature returns the hottest value of the Intel CPU sensor
+// ReadCPUTemperature returns the hottest value of the Intel CPU sensor
 // ("coretemp"), in °C. It returns 0 if the sensor is not found.
-func readCPUTemperature(pattern string) float64 {
+func ReadCPUTemperature(pattern string) float64 {
 	dirs, _ := filepath.Glob(pattern)
 	for _, dir := range dirs {
 		name, err := os.ReadFile(filepath.Join(dir, "name"))
