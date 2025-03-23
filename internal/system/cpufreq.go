@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"os"
@@ -7,17 +7,17 @@ import (
 	"strings"
 )
 
-const cpuFreqPattern = "/sys/devices/system/cpu/cpu[0-9]*/cpufreq"
+const CPUFreqPattern = "/sys/devices/system/cpu/cpu[0-9]*/cpufreq"
 
-// A busy core far below maxMHz is usually slowed down by heat.
-type coreFrequency struct {
-	currentMHz int
-	maxMHz     int
+// A busy core far below MaxMHz is usually slowed down by heat.
+type CoreFrequency struct {
+	CurrentMHz int
+	MaxMHz     int
 }
 
-// readCoreFrequencies returns the speed of each core, by core number.
-func readCoreFrequencies(pattern string) map[int]coreFrequency {
-	frequencies := make(map[int]coreFrequency)
+// ReadCoreFrequencies returns the speed of each core, by core number.
+func ReadCoreFrequencies(pattern string) map[int]CoreFrequency {
+	frequencies := make(map[int]CoreFrequency)
 	dirs, _ := filepath.Glob(pattern)
 	for _, dir := range dirs {
 		// dir looks like ".../cpu12/cpufreq": take 12 from the parent folder.
@@ -30,7 +30,7 @@ func readCoreFrequencies(pattern string) map[int]coreFrequency {
 		if current == 0 || maximum == 0 {
 			continue
 		}
-		frequencies[core] = coreFrequency{currentMHz: current, maxMHz: maximum}
+		frequencies[core] = CoreFrequency{CurrentMHz: current, MaxMHz: maximum}
 	}
 	return frequencies
 }
@@ -48,13 +48,13 @@ func readKHzAsMHz(path string) int {
 	return kHz / 1000
 }
 
-// fastestCore returns the speed of the fastest core, and the top speed
+// FastestCore returns the speed of the fastest core, and the top speed
 // that any core can reach.
-func fastestCore(frequencies map[int]coreFrequency) (int, int) {
+func FastestCore(frequencies map[int]CoreFrequency) (int, int) {
 	var fastest, limit int
 	for _, frequency := range frequencies {
-		fastest = max(fastest, frequency.currentMHz)
-		limit = max(limit, frequency.maxMHz)
+		fastest = max(fastest, frequency.CurrentMHz)
+		limit = max(limit, frequency.MaxMHz)
 	}
 	return fastest, limit
 }

@@ -54,15 +54,15 @@ func (c *collector) collect() (sample, error) {
 	// the time that passed for one core.
 	elapsedTicks := float64(cpu.total-c.previousCPU.total) / float64(cpu.cores)
 
-	frequencies := readCoreFrequencies(cpuFreqPattern)
-	fastest, limit := fastestCore(frequencies)
+	frequencies := system.ReadCoreFrequencies(system.CPUFreqPattern)
+	fastest, limit := system.FastestCore(frequencies)
 
 	top := topProcesses(c.previousProcesses, processes, elapsedTicks, topProcessCount)
 	// Only for the top 5: no need to read it for every process.
 	for i := range top {
 		top[i].Command = readCommand(top[i].PID)
-		top[i].CoreMHz = frequencies[top[i].core].currentMHz
-		top[i].CoreMaxMHz = frequencies[top[i].core].maxMHz
+		top[i].CoreMHz = frequencies[top[i].core].CurrentMHz
+		top[i].CoreMaxMHz = frequencies[top[i].core].MaxMHz
 	}
 
 	gpu := c.gpu.read()
