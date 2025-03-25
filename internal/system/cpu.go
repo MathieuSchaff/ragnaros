@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"fmt"
@@ -7,23 +7,23 @@ import (
 	"strings"
 )
 
-// cpuTimes holds the CPU counters of /proc/stat, in ticks. They only go up.
-type cpuTimes struct {
-	idle  uint64
-	total uint64
-	cores int
+// CPUTimes holds the CPU counters of /proc/stat, in ticks. They only go up.
+type CPUTimes struct {
+	Idle  uint64
+	Total uint64
+	Cores int
 }
 
-func readCPUTimes() (cpuTimes, error) {
+func ReadCPUTimes() (CPUTimes, error) {
 	data, err := os.ReadFile("/proc/stat")
 	if err != nil {
-		return cpuTimes{}, err
+		return CPUTimes{}, err
 	}
 	return parseCPUTimes(string(data))
 }
 
-func parseCPUTimes(content string) (cpuTimes, error) {
-	var times cpuTimes
+func parseCPUTimes(content string) (CPUTimes, error) {
+	var times CPUTimes
 	found := false
 
 	for _, line := range strings.Split(content, "\n") {
@@ -34,22 +34,22 @@ func parseCPUTimes(content string) (cpuTimes, error) {
 		if fields[0] == "cpu" {
 			idle, total, err := sumCPUFields(fields[1:])
 			if err != nil {
-				return cpuTimes{}, err
+				return CPUTimes{}, err
 			}
-			times.idle = idle
-			times.total = total
+			times.Idle = idle
+			times.Total = total
 			found = true
 		} else if strings.HasPrefix(fields[0], "cpu") {
 			// Lines "cpu0", "cpu1", ... describe one core each.
-			times.cores++
+			times.Cores++
 		}
 	}
 
 	if !found {
-		return cpuTimes{}, fmt.Errorf("no global cpu line in /proc/stat")
+		return CPUTimes{}, fmt.Errorf("no global cpu line in /proc/stat")
 	}
-	if times.cores == 0 {
-		times.cores = 1
+	if times.Cores == 0 {
+		times.Cores = 1
 	}
 	return times, nil
 }
@@ -74,13 +74,13 @@ func sumCPUFields(fields []string) (uint64, uint64, error) {
 	return idle, total, nil
 }
 
-// cpuUsage returns the global CPU usage (0 to 100) between two measures.
-func cpuUsage(previous, current cpuTimes) float64 {
-	if current.total <= previous.total || current.idle < previous.idle {
+// CPUUsage returns the global CPU usage (0 to 100) between two measures.
+func CPUUsage(previous, current CPUTimes) float64 {
+	if current.Total <= previous.Total || current.Idle < previous.Idle {
 		return 0
 	}
-	totalDelta := current.total - previous.total
-	idleDelta := current.idle - previous.idle
+	totalDelta := current.Total - previous.Total
+	idleDelta := current.Idle - previous.Idle
 	if idleDelta > totalDelta {
 		return 0
 	}

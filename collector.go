@@ -11,13 +11,13 @@ const topProcessCount = 5
 // collector remembers the last reading: CPU usage is the difference
 // between two readings.
 type collector struct {
-	previousCPU       cpuTimes
+	previousCPU       system.CPUTimes
 	previousProcesses map[processKey]uint64
 	gpu               nvidiaGPU
 }
 
 func newCollector() (*collector, error) {
-	cpu, err := readCPUTimes()
+	cpu, err := system.ReadCPUTimes()
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func newCollector() (*collector, error) {
 }
 
 func (c *collector) collect() (sample, error) {
-	cpu, err := readCPUTimes()
+	cpu, err := system.ReadCPUTimes()
 	if err != nil {
 		return sample{}, err
 	}
@@ -52,7 +52,7 @@ func (c *collector) collect() (sample, error) {
 
 	// /proc/stat adds up all cores. Divide by the number of cores to get
 	// the time that passed for one core.
-	elapsedTicks := float64(cpu.total-c.previousCPU.total) / float64(cpu.cores)
+	elapsedTicks := float64(cpu.Total-c.previousCPU.Total) / float64(cpu.Cores)
 
 	frequencies := system.ReadCoreFrequencies(system.CPUFreqPattern)
 	fastest, limit := system.FastestCore(frequencies)
@@ -69,7 +69,7 @@ func (c *collector) collect() (sample, error) {
 
 	s := sample{
 		Time:            time.Now(),
-		CPUPercent:      cpuUsage(c.previousCPU, cpu),
+		CPUPercent:      system.CPUUsage(c.previousCPU, cpu),
 		LoadAverage:     load,
 		FastestCoreMHz:  fastest,
 		CoreLimitMHz:    limit,
