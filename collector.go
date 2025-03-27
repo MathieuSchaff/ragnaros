@@ -13,7 +13,7 @@ const topProcessCount = 5
 type collector struct {
 	previousCPU       system.CPUTimes
 	previousProcesses map[processKey]uint64
-	gpu               nvidiaGPU
+	gpu               system.NvidiaGPU
 }
 
 func newCollector() (*collector, error) {
@@ -28,7 +28,7 @@ func newCollector() (*collector, error) {
 	return &collector{
 		previousCPU:       cpu,
 		previousProcesses: ticksByProcess(processes),
-		gpu:               findNvidiaGPU(pciDevicesPattern),
+		gpu:               system.FindNvidiaGPU(system.PCIDevicesPattern),
 	}, nil
 }
 
@@ -65,7 +65,7 @@ func (c *collector) collect() (sample, error) {
 		top[i].CoreMaxMHz = frequencies[top[i].core].MaxMHz
 	}
 
-	gpu := c.gpu.read()
+	gpu := c.gpu.Read()
 
 	s := sample{
 		Time:            time.Now(),
@@ -76,12 +76,12 @@ func (c *collector) collect() (sample, error) {
 		MemAvailableKB:  memory.AvailableKB,
 		SwapUsedKB:      memory.SwapUsedKB,
 		TempCelsius:     system.ReadCPUTemperature(system.HwmonPattern),
-		GPUState:        gpu.state,
-		GPUPercent:      gpu.usagePercent,
-		GPUTempCelsius:  gpu.tempCelsius,
-		GPUPowerWatts:   gpu.powerWatts,
-		GPUMemoryMiB:    gpu.memoryMiB,
-		GPUMemoryMaxMiB: gpu.memoryMaxMiB,
+		GPUState:        gpu.State,
+		GPUPercent:      gpu.UsagePercent,
+		GPUTempCelsius:  gpu.TempCelsius,
+		GPUPowerWatts:   gpu.PowerWatts,
+		GPUMemoryMiB:    gpu.MemoryMiB,
+		GPUMemoryMaxMiB: gpu.MemoryMaxMiB,
 		TopProcesses:    top,
 	}
 

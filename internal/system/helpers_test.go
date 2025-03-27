@@ -17,3 +17,12 @@ func writeFiles(t *testing.T, files map[string]string) {
 		}
 	}
 }
+
+// fakeNvidiaSmi writes a small shell script that stands in for nvidia-smi.
+func fakeNvidiaSmi(t *testing.T, body string) string {
+	path := filepath.Join(t.TempDir(), "nvidia-smi")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+body+"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}

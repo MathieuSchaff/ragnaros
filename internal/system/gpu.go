@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"context"
@@ -11,27 +11,27 @@ import (
 )
 
 const (
-	pciDevicesPattern = "/sys/bus/pci/devices/*"
+	PCIDevicesPattern = "/sys/bus/pci/devices/*"
 	nvidiaVendorID    = "0x10de"
 	nvidiaSmiTimeout  = time.Second
 )
 
-type gpuReading struct {
-	state        string // "active", "asleep" or "no data", "" without GPU
-	usagePercent float64
-	tempCelsius  float64
-	powerWatts   float64
-	memoryMiB    float64 // video memory used
-	memoryMaxMiB float64
+type GPUReading struct {
+	State        string // "active", "asleep" or "no data", "" without GPU
+	UsagePercent float64
+	TempCelsius  float64
+	PowerWatts   float64
+	MemoryMiB    float64 // video memory used
+	MemoryMaxMiB float64
 }
 
-// nvidiaGPU is found once at start. smiPath is "" when nvidia-smi is not installed.
-type nvidiaGPU struct {
+// NvidiaGPU is found once at start. smiPath is "" when nvidia-smi is not installed.
+type NvidiaGPU struct {
 	pciDir  string
 	smiPath string
 }
 
-func findNvidiaGPU(pattern string) nvidiaGPU {
+func FindNvidiaGPU(pattern string) NvidiaGPU {
 	dirs, _ := filepath.Glob(pattern)
 	for _, dir := range dirs {
 		vendor := readTrimmed(filepath.Join(dir, "vendor"))
@@ -39,25 +39,25 @@ func findNvidiaGPU(pattern string) nvidiaGPU {
 		// Class 0x03... means a graphics card.
 		if vendor == nvidiaVendorID && strings.HasPrefix(class, "0x03") {
 			smiPath, _ := exec.LookPath("nvidia-smi")
-			return nvidiaGPU{pciDir: dir, smiPath: smiPath}
+			return NvidiaGPU{pciDir: dir, smiPath: smiPath}
 		}
 	}
-	return nvidiaGPU{}
+	return NvidiaGPU{}
 }
 
-func (gpu nvidiaGPU) read() gpuReading {
+func (gpu NvidiaGPU) Read() GPUReading {
 	if gpu.pciDir == "" {
-		return gpuReading{}
+		return GPUReading{}
 	}
 
 	// Calling nvidia-smi wakes up a sleeping GPU, and the awake GPU heats
 	// the CPU (they share the same heatpipe). So check first if it sleeps.
 	state := readTrimmed(filepath.Join(gpu.pciDir, "power", "runtime_status"))
 	if state == "suspended" {
-		return gpuReading{state: "asleep"}
+		return GPUReading{State: "asleep"}
 	}
 	if gpu.smiPath == "" {
-		return gpuReading{state: "no data"}
+		return GPUReading{State: "no data"}
 	}
 
 	// Give up after 1 second if the driver is stuck.
@@ -67,27 +67,27 @@ func (gpu nvidiaGPU) read() gpuReading {
 		"--query-gpu=utilization.gpu,temperature.gpu,power.draw,memory.used,memory.total",
 		"--format=csv,noheader,nounits").Output()
 	if err != nil {
-		return gpuReading{state: "no data"}
+		return GPUReading{State: "no data"}
 	}
 	reading := parseNvidiaSmi(string(output))
-	reading.state = "active"
+	reading.State = "active"
 	return reading
 }
 
 // parseNvidiaSmi reads "20, 54, 16.66, 43, 6144": usage, temperature, power,
 // memory used and memory total. A value shown as "[N/A]" stays 0.
-func parseNvidiaSmi(output string) gpuReading {
+func parseNvidiaSmi(output string) GPUReading {
 	firstLine, _, _ := strings.Cut(output, "\n")
 	values := strings.Split(firstLine, ",")
 	for len(values) < 5 {
 		values = append(values, "")
 	}
-	return gpuReading{
-		usagePercent: parseOptionalFloat(values[0]),
-		tempCelsius:  parseOptionalFloat(values[1]),
-		powerWatts:   parseOptionalFloat(values[2]),
-		memoryMiB:    parseOptionalFloat(values[3]),
-		memoryMaxMiB: parseOptionalFloat(values[4]),
+	return GPUReading{
+		UsagePercent: parseOptionalFloat(values[0]),
+		TempCelsius:  parseOptionalFloat(values[1]),
+		PowerWatts:   parseOptionalFloat(values[2]),
+		MemoryMiB:    parseOptionalFloat(values[3]),
+		MemoryMaxMiB: parseOptionalFloat(values[4]),
 	}
 }
 

@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"os"
@@ -16,7 +16,7 @@ func TestFindNvidiaGPU(t *testing.T) {
 		dir + "/0000:01:00.0/vendor": "0x10de\n",
 		dir + "/0000:01:00.0/class":  "0x030000\n",
 	})
-	gpu := findNvidiaGPU(dir + "/*")
+	gpu := FindNvidiaGPU(dir + "/*")
 	if filepath.Base(gpu.pciDir) != "0000:01:00.0" {
 		t.Errorf("pciDir = %q, want the NVIDIA display controller", gpu.pciDir)
 	}
@@ -29,9 +29,9 @@ func TestReadAsleepGPUDoesNotRunNvidiaSmi(t *testing.T) {
 	marker := filepath.Join(dir, "called")
 	smi := fakeNvidiaSmi(t, "touch "+marker+"\necho '99, 99, 99'")
 
-	got := nvidiaGPU{pciDir: dir, smiPath: smi}.read()
+	got := NvidiaGPU{pciDir: dir, smiPath: smi}.Read()
 
-	if got != (gpuReading{state: "asleep"}) {
+	if got != (GPUReading{State: "asleep"}) {
 		t.Errorf("got %+v, want asleep only", got)
 	}
 	if _, err := os.Stat(marker); err == nil {
@@ -44,9 +44,9 @@ func TestReadActiveGPU(t *testing.T) {
 	writeFiles(t, map[string]string{dir + "/power/runtime_status": "active\n"})
 	smi := fakeNvidiaSmi(t, "echo '20, 54, 16.66, 43, 6144'")
 
-	got := nvidiaGPU{pciDir: dir, smiPath: smi}.read()
+	got := NvidiaGPU{pciDir: dir, smiPath: smi}.Read()
 
-	want := gpuReading{state: "active", usagePercent: 20, tempCelsius: 54, powerWatts: 16.66, memoryMiB: 43, memoryMaxMiB: 6144}
+	want := GPUReading{State: "active", UsagePercent: 20, TempCelsius: 54, PowerWatts: 16.66, MemoryMiB: 43, MemoryMaxMiB: 6144}
 	if got != want {
 		t.Errorf("got %+v, want %+v", got, want)
 	}
@@ -54,7 +54,7 @@ func TestReadActiveGPU(t *testing.T) {
 
 func TestParseNvidiaSmiMissingValues(t *testing.T) {
 	got := parseNvidiaSmi("35, 61, [N/A]\n12, 40, 5\n")
-	if got.usagePercent != 35 || got.tempCelsius != 61 || got.powerWatts != 0 {
+	if got.UsagePercent != 35 || got.TempCelsius != 61 || got.PowerWatts != 0 {
 		t.Errorf("got %+v, want first GPU with power 0", got)
 	}
 }
@@ -64,9 +64,9 @@ func TestReadGPUWhenNvidiaSmiFails(t *testing.T) {
 	writeFiles(t, map[string]string{dir + "/power/runtime_status": "active\n"})
 	smi := fakeNvidiaSmi(t, "exit 1")
 
-	got := nvidiaGPU{pciDir: dir, smiPath: smi}.read()
+	got := NvidiaGPU{pciDir: dir, smiPath: smi}.Read()
 
-	if got != (gpuReading{state: "no data"}) {
+	if got != (GPUReading{State: "no data"}) {
 		t.Errorf("got %+v, want no data instead of zeros", got)
 	}
 }
