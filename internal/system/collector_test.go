@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"os"
@@ -11,13 +11,13 @@ func TestCollectOnRealProc(t *testing.T) {
 	if _, err := os.Stat("/proc/stat"); err != nil {
 		t.Skip("no /proc on this system")
 	}
-	c, err := newCollector()
+	c, err := NewCollector()
 	if err != nil {
 		t.Fatal(err)
 	}
 	time.Sleep(100 * time.Millisecond)
 
-	s, err := c.collect()
+	s, err := c.Collect()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,7 +27,7 @@ func TestCollectOnRealProc(t *testing.T) {
 	if s.MemAvailableKB == 0 {
 		t.Error("MemAvailableKB is 0")
 	}
-	if len(s.TopProcesses) > topProcessCount {
-		t.Errorf("%d top processes, want at most %d", len(s.TopProcesses), topProcessCount)
+	if len(s.TopProcesses) > TopProcessCount {
+		t.Errorf("%d top processes, want at most %d", len(s.TopProcesses), TopProcessCount)
 	}
 }

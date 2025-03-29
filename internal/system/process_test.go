@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"strings"
@@ -50,7 +50,7 @@ func TestTopProcesses(t *testing.T) {
 	got := topProcesses(previous, current, 100, 5)
 
 	// The reused PID 3 is counted from zero, not from the old process's 100 ticks.
-	want := []processUsage{
+	want := []ProcessUsage{
 		{PID: 3, Name: "new", CPUPercent: 500},
 		{PID: 4, Name: "fresh", CPUPercent: 300},
 		{PID: 1, Name: "busy", CPUPercent: 150},
@@ -90,7 +90,7 @@ func TestFormatCommand(t *testing.T) {
 }
 
 func TestLabelFallsBackToName(t *testing.T) {
-	if got := (processUsage{Name: "kworker/0:1"}).label(); got != "kworker/0:1" {
+	if got := (ProcessUsage{Name: "kworker/0:1"}).Label(); got != "kworker/0:1" {
 		t.Errorf("got %q", got)
 	}
 }

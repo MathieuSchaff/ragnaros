@@ -4,19 +4,21 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"ragnaros/internal/system"
 )
 
 func TestBuildReport(t *testing.T) {
 	start := time.Date(2024, 9, 6, 17, 0, 0, 0, time.UTC)
-	samples := []sample{
-		{Time: start, CPUPercent: 40, LoadAverage: 12.5, MemAvailableKB: 5000, TopProcesses: []processUsage{
+	samples := []system.Sample{
+		{Time: start, CPUPercent: 40, LoadAverage: 12.5, MemAvailableKB: 5000, TopProcesses: []system.ProcessUsage{
 			{PID: 10, Name: "backup", CPUPercent: 80},
 			{PID: 20, Name: "browser", CPUPercent: 30},
 		}},
-		{Time: start.Add(time.Second), CPUPercent: 97, MemAvailableKB: 2000, TempCelsius: 81, TopProcesses: []processUsage{
+		{Time: start.Add(time.Second), CPUPercent: 97, MemAvailableKB: 2000, TempCelsius: 81, TopProcesses: []system.ProcessUsage{
 			{PID: 10, Name: "backup", CPUPercent: 350},
 		}},
-		{Time: start.Add(2 * time.Second), CPUPercent: 92, MemAvailableKB: 3000, SwapUsedKB: 700, TopProcesses: []processUsage{
+		{Time: start.Add(2 * time.Second), CPUPercent: 92, MemAvailableKB: 3000, SwapUsedKB: 700, TopProcesses: []system.ProcessUsage{
 			{PID: 10, Name: "backup", CPUPercent: 300},
 			{PID: 20, Name: "browser", CPUPercent: 400},
 		}},
@@ -59,9 +61,9 @@ func TestBuildReport(t *testing.T) {
 }
 
 func TestBuildReportRanksHeavyProcessFirst(t *testing.T) {
-	samples := []sample{
-		{TopProcesses: []processUsage{{PID: 1, Name: "light", CPUPercent: 10}}},
-		{TopProcesses: []processUsage{{PID: 1, Name: "light", CPUPercent: 10}, {PID: 2, Name: "heavy", CPUPercent: 900}}},
+	samples := []system.Sample{
+		{TopProcesses: []system.ProcessUsage{{PID: 1, Name: "light", CPUPercent: 10}}},
+		{TopProcesses: []system.ProcessUsage{{PID: 1, Name: "light", CPUPercent: 10}, {PID: 2, Name: "heavy", CPUPercent: 900}}},
 	}
 	report, _ := buildReport(samples)
 	if report.topProcesses[0].name != "heavy" {
@@ -76,7 +78,7 @@ func TestBuildReportEmpty(t *testing.T) {
 }
 
 func TestPrintReportMentionsObservations(t *testing.T) {
-	report, _ := buildReport([]sample{{Time: time.Now(), CPUPercent: 95}})
+	report, _ := buildReport([]system.Sample{{Time: time.Now(), CPUPercent: 95}})
 	var output strings.Builder
 	printReport(&output, report)
 	if !strings.Contains(output.String(), "not proof") {
@@ -85,13 +87,13 @@ func TestPrintReportMentionsObservations(t *testing.T) {
 }
 
 func TestBuildReportCoreFrequency(t *testing.T) {
-	game := func(coreMHz int) processUsage {
-		return processUsage{PID: 6, Name: "game", CPUPercent: 100, CoreMHz: coreMHz, CoreMaxMHz: 4700}
+	game := func(coreMHz int) system.ProcessUsage {
+		return system.ProcessUsage{PID: 6, Name: "game", CPUPercent: 100, CoreMHz: coreMHz, CoreMaxMHz: 4700}
 	}
-	samples := []sample{
-		{FastestCoreMHz: 4600, CoreLimitMHz: 4700, TopProcesses: []processUsage{game(4600)}},
-		{FastestCoreMHz: 2697, CoreLimitMHz: 4700, TopProcesses: []processUsage{game(2697)}},
-		{FastestCoreMHz: 3000, CoreLimitMHz: 4700, TopProcesses: []processUsage{game(960)}},
+	samples := []system.Sample{
+		{FastestCoreMHz: 4600, CoreLimitMHz: 4700, TopProcesses: []system.ProcessUsage{game(4600)}},
+		{FastestCoreMHz: 2697, CoreLimitMHz: 4700, TopProcesses: []system.ProcessUsage{game(2697)}},
+		{FastestCoreMHz: 3000, CoreLimitMHz: 4700, TopProcesses: []system.ProcessUsage{game(960)}},
 	}
 	report, _ := buildReport(samples)
 	if report.minFastestCoreMHz != 2697 || report.coreLimitMHz != 4700 {
@@ -103,7 +105,7 @@ func TestBuildReportCoreFrequency(t *testing.T) {
 }
 
 func TestBuildReportWithoutFrequency(t *testing.T) {
-	report, _ := buildReport([]sample{{CPUPercent: 95}})
+	report, _ := buildReport([]system.Sample{{CPUPercent: 95}})
 	if report.coreLimitMHz != 0 {
 		t.Errorf("coreLimitMHz = %d, want 0 without cpufreq", report.coreLimitMHz)
 	}
@@ -111,7 +113,7 @@ func TestBuildReportWithoutFrequency(t *testing.T) {
 
 func TestBuildReportGPU(t *testing.T) {
 	start := time.Date(2024, 9, 6, 17, 0, 0, 0, time.UTC)
-	samples := []sample{
+	samples := []system.Sample{
 		{Time: start, GPUState: "asleep"},
 		{Time: start.Add(time.Second), GPUState: "active", GPUPercent: 14, GPUTempCelsius: 83, GPUPowerWatts: 24},
 		{Time: start.Add(2 * time.Second), GPUState: "active", GPUPercent: 9, GPUTempCelsius: 80, GPUPowerWatts: 30, GPUMemoryMiB: 910, GPUMemoryMaxMiB: 6144},
@@ -132,7 +134,7 @@ func TestBuildReportGPU(t *testing.T) {
 }
 
 func TestBuildReportKeepsLastAlert(t *testing.T) {
-	samples := []sample{{Alert: "CPU at 91 °C"}, {}, {Alert: "game uses 99 % of a core"}, {}}
+	samples := []system.Sample{{Alert: "CPU at 91 °C"}, {}, {Alert: "game uses 99 % of a core"}, {}}
 	report, _ := buildReport(samples)
 	if report.alert != "game uses 99 % of a core" {
 		t.Errorf("alert = %q, want the last one", report.alert)

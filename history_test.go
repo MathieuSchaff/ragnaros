@@ -1,11 +1,15 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"ragnaros/internal/system"
+)
 
 func TestHistoryKeepsLatestSamples(t *testing.T) {
 	h := newHistory(3)
 	for i := 1; i <= 5; i++ {
-		h.add(sample{CPUPercent: float64(i)})
+		h.add(system.Sample{CPUPercent: float64(i)})
 	}
 
 	got := h.all()

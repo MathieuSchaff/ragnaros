@@ -7,10 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"ragnaros/internal/system"
 )
 
 // saveIncident writes the samples as JSONL: one JSON object per line.
-func saveIncident(dir string, samples []sample, at time.Time) (string, error) {
+func saveIncident(dir string, samples []system.Sample, at time.Time) (string, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
@@ -29,17 +31,17 @@ func saveIncident(dir string, samples []sample, at time.Time) (string, error) {
 	return path, nil
 }
 
-func readIncident(path string) ([]sample, error) {
+func readIncident(path string) ([]system.Sample, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
 
-	var samples []sample
+	var samples []system.Sample
 	decoder := json.NewDecoder(file)
 	for decoder.More() {
-		var s sample
+		var s system.Sample
 		if err := decoder.Decode(&s); err != nil {
 			return nil, fmt.Errorf("%s: sample %d: %w", path, len(samples)+1, err)
 		}
@@ -50,7 +52,7 @@ func readIncident(path string) ([]sample, error) {
 
 // recordSample adds a sample to the history and saves the history when a spike starts.
 // It returns the incident file path, or "" when nothing was saved.
-func recordSample(recent *history, alerts *detector, s sample, dir string) (string, error) {
+func recordSample(recent *history, alerts *detector, s system.Sample, dir string) (string, error) {
 	recent.add(s)
 	if !alerts.update(s.Alert != "") {
 		return "", nil

@@ -4,6 +4,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"ragnaros/internal/system"
 )
 
 func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
@@ -16,7 +18,7 @@ func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
 	cpuValues := []float64{20, 30, 40, 95, 96, 97, 98, 99, 99, 99, 99, 99, 99}
 	var saved []string
 	for i, cpu := range cpuValues {
-		s := sample{Time: start.Add(time.Duration(i) * time.Second), CPUPercent: cpu, MemAvailableKB: 1000}
+		s := system.Sample{Time: start.Add(time.Duration(i) * time.Second), CPUPercent: cpu, MemAvailableKB: 1000}
 		if cpu > 90 {
 			s.Alert = "CPU high"
 		}

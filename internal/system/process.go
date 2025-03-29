@@ -1,4 +1,4 @@
-package main
+package system
 
 import (
 	"fmt"
@@ -24,9 +24,9 @@ type processKey struct {
 	startTime uint64
 }
 
-// processUsage is the CPU usage of one process between two samples.
+// ProcessUsage is the CPU usage of one process between two samples.
 // 100 % = one full core, so it can go above 100.
-type processUsage struct {
+type ProcessUsage struct {
 	PID        int     `json:"pid"`
 	Name       string  `json:"name"`
 	Command    string  `json:"command,omitempty"`
@@ -129,8 +129,8 @@ func formatCommand(cmdline string) string {
 	return command
 }
 
-// label is what we print: the command line when known, else the short name.
-func (p processUsage) label() string {
+// Label is what we print: the command line when known, else the short name.
+func (p ProcessUsage) Label() string {
 	if p.Command != "" {
 		return p.Command
 	}
@@ -147,12 +147,12 @@ func ticksByProcess(stats []processStat) map[processKey]uint64 {
 
 // topProcesses returns the processes that used the most CPU since the previous
 // sample. elapsedTicks is the time that passed, in ticks.
-func topProcesses(previous map[processKey]uint64, current []processStat, elapsedTicks float64, limit int) []processUsage {
+func topProcesses(previous map[processKey]uint64, current []processStat, elapsedTicks float64, limit int) []ProcessUsage {
 	if elapsedTicks <= 0 {
 		return nil
 	}
 
-	var usages []processUsage
+	var usages []ProcessUsage
 	for _, stat := range current {
 		// A process not seen last time is new: count all its CPU time.
 		before := previous[processKey{stat.pid, stat.startTime}]
@@ -160,7 +160,7 @@ func topProcesses(previous map[processKey]uint64, current []processStat, elapsed
 			continue
 		}
 		percent := float64(stat.ticks-before) / elapsedTicks * 100
-		usages = append(usages, processUsage{PID: stat.pid, Name: stat.name, CPUPercent: percent, core: stat.core})
+		usages = append(usages, ProcessUsage{PID: stat.pid, Name: stat.name, CPUPercent: percent, core: stat.core})
 	}
 
 	sort.Slice(usages, func(i, j int) bool {

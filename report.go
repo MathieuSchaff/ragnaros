@@ -74,7 +74,7 @@ func runReport(path string) error {
 	return nil
 }
 
-func buildReport(samples []sample) (incidentReport, error) {
+func buildReport(samples []system.Sample) (incidentReport, error) {
 	if len(samples) == 0 {
 		return incidentReport{}, fmt.Errorf("no samples")
 	}
@@ -136,7 +136,7 @@ func buildReport(samples []sample) (incidentReport, error) {
 	return report, nil
 }
 
-func addGPU(report *incidentReport, s sample) {
+func addGPU(report *incidentReport, s system.Sample) {
 	if s.GPUState == "" {
 		return
 	}
@@ -154,7 +154,7 @@ func addGPU(report *incidentReport, s sample) {
 	report.gpuMemoryMaxMiB = max(report.gpuMemoryMaxMiB, s.GPUMemoryMaxMiB)
 }
 
-func addAppearances(summaries map[int]*processSummary, usages []processUsage) {
+func addAppearances(summaries map[int]*processSummary, usages []system.ProcessUsage) {
 	for _, usage := range usages {
 		// Same PID but another name: a new program got this PID.
 		summary, found := summaries[usage.PID]
@@ -162,7 +162,7 @@ func addAppearances(summaries map[int]*processSummary, usages []processUsage) {
 			summary = &processSummary{pid: usage.PID, name: usage.Name}
 			summaries[usage.PID] = summary
 		}
-		summary.label = usage.label()
+		summary.label = usage.Label()
 		summary.appearances++
 		summary.totalCPU += usage.CPUPercent
 		if usage.CPUPercent > summary.maxCPU {
@@ -224,7 +224,7 @@ func printReport(w io.Writer, r incidentReport) {
 		fmt.Fprintf(w, " (asleep %d/%d)\n", r.gpuAsleepSamples, r.gpuSamples)
 	}
 
-	fmt.Fprintf(w, "\nBusiest processes (SEEN = times in the top %d):\n", topProcessCount)
+	fmt.Fprintf(w, "\nBusiest processes (SEEN = times in the top %d):\n", system.TopProcessCount)
 	fmt.Fprintf(w, "  %7s  %6s  %8s  %14s  %s\n", "PID", "SEEN", "MAX CPU", "AVG SPEED", "COMMAND")
 	for _, p := range r.topProcesses {
 		seen := fmt.Sprintf("%d/%d", p.appearances, r.sampleCount)

@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"ragnaros/internal/system"
+)
 
 func TestParseWatchFlagsDefaults(t *testing.T) {
 	config, err := parseWatchFlags(nil)
@@ -43,17 +47,17 @@ func TestParseWatchFlagsRejectsBadValues(t *testing.T) {
 
 func TestAlertReason(t *testing.T) {
 	config := watchConfig{threshold: 90, coreThreshold: 95, tempThreshold: 90}
-	game := []processUsage{{Name: "game", CPUPercent: 99}}
+	game := []system.ProcessUsage{{Name: "game", CPUPercent: 99}}
 	tests := []struct {
 		name   string
-		sample sample
+		sample system.Sample
 		want   string
 	}{
-		{"calm", sample{CPUPercent: 20}, ""},
-		{"global CPU", sample{CPUPercent: 95}, "CPU at 95 %"},
-		{"one saturated core", sample{CPUPercent: 6, TopProcesses: game}, "game uses 99 % of a core"},
-		{"hot CPU", sample{CPUPercent: 30, TempCelsius: 91}, "CPU at 91 °C"},
-		{"warm but fine", sample{CPUPercent: 30, TempCelsius: 90}, ""},
+		{"calm", system.Sample{CPUPercent: 20}, ""},
+		{"global CPU", system.Sample{CPUPercent: 95}, "CPU at 95 %"},
+		{"one saturated core", system.Sample{CPUPercent: 6, TopProcesses: game}, "game uses 99 % of a core"},
+		{"hot CPU", system.Sample{CPUPercent: 30, TempCelsius: 91}, "CPU at 91 °C"},
+		{"warm but fine", system.Sample{CPUPercent: 30, TempCelsius: 90}, ""},
 	}
 	for _, test := range tests {
 		if got := alertReason(test.sample, config); got != test.want {
@@ -62,7 +66,7 @@ func TestAlertReason(t *testing.T) {
 	}
 
 	config.coreThreshold = 0
-	if got := alertReason(sample{CPUPercent: 6, TopProcesses: game}, config); got != "" {
+	if got := alertReason(system.Sample{CPUPercent: 6, TopProcesses: game}, config); got != "" {
 		t.Errorf("disabled core trigger: got %q", got)
 	}
 }

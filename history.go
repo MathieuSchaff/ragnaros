@@ -1,8 +1,10 @@
 package main
 
+import "ragnaros/internal/system"
+
 // history keeps only the most recent samples, up to maxSize.
 type history struct {
-	samples []sample
+	samples []system.Sample
 	maxSize int
 }
 
@@ -10,7 +12,7 @@ func newHistory(maxSize int) *history {
 	return &history{maxSize: maxSize}
 }
 
-func (h *history) add(s sample) {
+func (h *history) add(s system.Sample) {
 	h.samples = append(h.samples, s)
 	if len(h.samples) > h.maxSize {
 		// Drop the oldest sample.
@@ -19,8 +21,8 @@ func (h *history) add(s sample) {
 }
 
 // all returns a copy, safe to keep while new samples arrive.
-func (h *history) all() []sample {
-	result := make([]sample, len(h.samples))
+func (h *history) all() []system.Sample {
+	result := make([]system.Sample, len(h.samples))
 	copy(result, h.samples)
 	return result
 }

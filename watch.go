@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"ragnaros/internal/system"
 )
 
 const historyDuration = 2 * time.Minute
@@ -66,7 +68,7 @@ func runWatch(args []string) error {
 		return err
 	}
 
-	collector, err := newCollector()
+	collector, err := system.NewCollector()
 	if err != nil {
 		return err
 	}
@@ -92,7 +94,7 @@ func runWatch(args []string) error {
 			fmt.Println("\nStopped.")
 			return nil
 		case <-ticker.C:
-			s, err := collector.collect()
+			s, err := collector.Collect()
 			if err != nil {
 				return err
 			}
@@ -109,7 +111,7 @@ func runWatch(args []string) error {
 
 // alertReason says why a sample counts as high, or returns "".
 // A program that uses only one core can lag while the total CPU stays low.
-func alertReason(s sample, config watchConfig) string {
+func alertReason(s system.Sample, config watchConfig) string {
 	if s.CPUPercent > config.threshold {
 		return fmt.Sprintf("CPU at %.0f %%", s.CPUPercent)
 	}

@@ -1,23 +1,19 @@
-package main
+package system
 
-import (
-	"time"
+import "time"
 
-	"ragnaros/internal/system"
-)
+const TopProcessCount = 5
 
-const topProcessCount = 5
-
-// collector remembers the last reading: CPU usage is the difference
+// Collector remembers the last reading: CPU usage is the difference
 // between two readings.
-type collector struct {
-	previousCPU       system.CPUTimes
+type Collector struct {
+	previousCPU       CPUTimes
 	previousProcesses map[processKey]uint64
-	gpu               system.NvidiaGPU
+	gpu               NvidiaGPU
 }
 
-func newCollector() (*collector, error) {
-	cpu, err := system.ReadCPUTimes()
+func NewCollector() (*Collector, error) {
+	cpu, err := ReadCPUTimes()
 	if err != nil {
 		return nil, err
 	}
@@ -25,39 +21,39 @@ func newCollector() (*collector, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &collector{
+	return &Collector{
 		previousCPU:       cpu,
 		previousProcesses: ticksByProcess(processes),
-		gpu:               system.FindNvidiaGPU(system.PCIDevicesPattern),
+		gpu:               FindNvidiaGPU(PCIDevicesPattern),
 	}, nil
 }
 
-func (c *collector) collect() (sample, error) {
-	cpu, err := system.ReadCPUTimes()
+func (c *Collector) Collect() (Sample, error) {
+	cpu, err := ReadCPUTimes()
 	if err != nil {
-		return sample{}, err
+		return Sample{}, err
 	}
-	memory, err := system.ReadMemory()
+	memory, err := ReadMemory()
 	if err != nil {
-		return sample{}, err
+		return Sample{}, err
 	}
-	load, err := system.ReadLoadAverage()
+	load, err := ReadLoadAverage()
 	if err != nil {
-		return sample{}, err
+		return Sample{}, err
 	}
 	processes, err := readProcesses()
 	if err != nil {
-		return sample{}, err
+		return Sample{}, err
 	}
 
 	// /proc/stat adds up all cores. Divide by the number of cores to get
 	// the time that passed for one core.
 	elapsedTicks := float64(cpu.Total-c.previousCPU.Total) / float64(cpu.Cores)
 
-	frequencies := system.ReadCoreFrequencies(system.CPUFreqPattern)
-	fastest, limit := system.FastestCore(frequencies)
+	frequencies := ReadCoreFrequencies(CPUFreqPattern)
+	fastest, limit := FastestCore(frequencies)
 
-	top := topProcesses(c.previousProcesses, processes, elapsedTicks, topProcessCount)
+	top := topProcesses(c.previousProcesses, processes, elapsedTicks, TopProcessCount)
 	// Only for the top 5: no need to read it for every process.
 	for i := range top {
 		top[i].Command = readCommand(top[i].PID)
@@ -67,15 +63,15 @@ func (c *collector) collect() (sample, error) {
 
 	gpu := c.gpu.Read()
 
-	s := sample{
+	s := Sample{
 		Time:            time.Now(),
-		CPUPercent:      system.CPUUsage(c.previousCPU, cpu),
+		CPUPercent:      CPUUsage(c.previousCPU, cpu),
 		LoadAverage:     load,
 		FastestCoreMHz:  fastest,
 		CoreLimitMHz:    limit,
 		MemAvailableKB:  memory.AvailableKB,
 		SwapUsedKB:      memory.SwapUsedKB,
-		TempCelsius:     system.ReadCPUTemperature(system.HwmonPattern),
+		TempCelsius:     ReadCPUTemperature(HwmonPattern),
 		GPUState:        gpu.State,
 		GPUPercent:      gpu.UsagePercent,
 		GPUTempCelsius:  gpu.TempCelsius,

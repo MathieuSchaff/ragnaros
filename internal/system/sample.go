@@ -1,9 +1,9 @@
-package main
+package system
 
 import "time"
 
-// sample is one measure of the machine. It is also one line of an incident file.
-type sample struct {
+// Sample is one measure of the machine. It is also one line of an incident file.
+type Sample struct {
 	Time            time.Time      `json:"time"`
 	CPUPercent      float64        `json:"cpu_percent"`
 	LoadAverage     float64        `json:"load_1m"`
@@ -18,6 +18,6 @@ type sample struct {
 	GPUPowerWatts   float64        `json:"gpu_power_watts,omitempty"`
 	GPUMemoryMiB    float64        `json:"gpu_memory_mib,omitempty"`
 	GPUMemoryMaxMiB float64        `json:"gpu_memory_max_mib,omitempty"`
-	TopProcesses    []processUsage `json:"top_processes"`
+	TopProcesses    []ProcessUsage `json:"top_processes"`
 	Alert           string         `json:"alert,omitempty"` // why the sample is high, "" if normal
 }
