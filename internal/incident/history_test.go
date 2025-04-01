@@ -1,4 +1,4 @@
-package main
+package incident
 
 import (
 	"testing"
@@ -7,12 +7,12 @@ import (
 )
 
 func TestHistoryKeepsLatestSamples(t *testing.T) {
-	h := newHistory(3)
+	h := NewHistory(3)
 	for i := 1; i <= 5; i++ {
-		h.add(system.Sample{CPUPercent: float64(i)})
+		h.Add(system.Sample{CPUPercent: float64(i)})
 	}
 
-	got := h.all()
+	got := h.All()
 	if len(got) != 3 {
 		t.Fatalf("len = %d, want 3", len(got))
 	}

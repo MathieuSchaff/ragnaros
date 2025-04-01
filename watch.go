@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"ragnaros/internal/incident"
 	"ragnaros/internal/system"
 )
 
@@ -72,7 +73,7 @@ func runWatch(args []string) error {
 	if err != nil {
 		return err
 	}
-	recent := newHistory(config.historySize())
+	recent := incident.NewHistory(config.historySize())
 	alerts := newDetector(config.alertSamples)
 
 	// Send Ctrl+C to this channel instead of killing the program.
@@ -89,7 +90,7 @@ func runWatch(args []string) error {
 		case <-stop:
 			// If the machine is slow right now, save what we have before quitting.
 			if alerts.pendingAlert() {
-				printSaveResult(saveIncident(config.incidentDir, recent.all(), time.Now()))
+				printSaveResult(saveIncident(config.incidentDir, recent.All(), time.Now()))
 			}
 			fmt.Println("\nStopped.")
 			return nil

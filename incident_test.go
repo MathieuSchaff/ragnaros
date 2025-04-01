@@ -5,12 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"ragnaros/internal/incident"
 	"ragnaros/internal/system"
 )
 
 func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
 	dir := t.TempDir()
-	recent := newHistory(120)
+	recent := incident.NewHistory(120)
 	alerts := newDetector(5)
 	start := time.Date(2024, 9, 6, 17, 0, 0, 0, time.UTC)
 

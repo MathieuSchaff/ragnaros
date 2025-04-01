@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"ragnaros/internal/incident"
 	"ragnaros/internal/system"
 )
 
@@ -52,10 +53,10 @@ func readIncident(path string) ([]system.Sample, error) {
 
 // recordSample adds a sample to the history and saves the history when a spike starts.
 // It returns the incident file path, or "" when nothing was saved.
-func recordSample(recent *history, alerts *detector, s system.Sample, dir string) (string, error) {
-	recent.add(s)
+func recordSample(recent *incident.History, alerts *detector, s system.Sample, dir string) (string, error) {
+	recent.Add(s)
 	if !alerts.update(s.Alert != "") {
 		return "", nil
 	}
-	return saveIncident(dir, recent.all(), s.Time)
+	return saveIncident(dir, recent.All(), s.Time)
 }
