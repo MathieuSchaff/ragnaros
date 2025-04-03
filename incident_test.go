@@ -12,7 +12,7 @@ import (
 func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
 	dir := t.TempDir()
 	recent := incident.NewHistory(120)
-	alerts := newDetector(5)
+	alerts := incident.NewDetector(5)
 	start := time.Date(2024, 9, 6, 17, 0, 0, 0, time.UTC)
 
 	// 3 calm samples, then a 10 second spike: only one file expected.

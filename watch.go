@@ -74,7 +74,7 @@ func runWatch(args []string) error {
 		return err
 	}
 	recent := incident.NewHistory(config.historySize())
-	alerts := newDetector(config.alertSamples)
+	alerts := incident.NewDetector(config.alertSamples)
 
 	// Send Ctrl+C to this channel instead of killing the program.
 	stop := make(chan os.Signal, 1)
@@ -89,7 +89,7 @@ func runWatch(args []string) error {
 		select {
 		case <-stop:
 			// If the machine is slow right now, save what we have before quitting.
-			if alerts.pendingAlert() {
+			if alerts.PendingAlert() {
 				printSaveResult(saveIncident(config.incidentDir, recent.All(), time.Now()))
 			}
 			fmt.Println("\nStopped.")
