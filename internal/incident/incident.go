@@ -1,4 +1,4 @@
-package main
+package incident
 
 import (
 	"bytes"
@@ -8,12 +8,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"ragnaros/internal/incident"
 	"ragnaros/internal/system"
 )
 
-// saveIncident writes the samples as JSONL: one JSON object per line.
-func saveIncident(dir string, samples []system.Sample, at time.Time) (string, error) {
+// Save writes the samples as JSONL: one JSON object per line.
+func Save(dir string, samples []system.Sample, at time.Time) (string, error) {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return "", err
 	}
@@ -32,7 +31,7 @@ func saveIncident(dir string, samples []system.Sample, at time.Time) (string, er
 	return path, nil
 }
 
-func readIncident(path string) ([]system.Sample, error) {
+func Read(path string) ([]system.Sample, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -51,12 +50,12 @@ func readIncident(path string) ([]system.Sample, error) {
 	return samples, nil
 }
 
-// recordSample adds a sample to the history and saves the history when a spike starts.
+// RecordSample adds a sample to the history and saves the history when a spike starts.
 // It returns the incident file path, or "" when nothing was saved.
-func recordSample(recent *incident.History, alerts *incident.Detector, s system.Sample, dir string) (string, error) {
+func RecordSample(recent *History, alerts *Detector, s system.Sample, dir string) (string, error) {
 	recent.Add(s)
 	if !alerts.Update(s.Alert != "") {
 		return "", nil
 	}
-	return saveIncident(dir, recent.All(), s.Time)
+	return Save(dir, recent.All(), s.Time)
 }

@@ -90,7 +90,7 @@ func runWatch(args []string) error {
 		case <-stop:
 			// If the machine is slow right now, save what we have before quitting.
 			if alerts.PendingAlert() {
-				printSaveResult(saveIncident(config.incidentDir, recent.All(), time.Now()))
+				printSaveResult(incident.Save(config.incidentDir, recent.All(), time.Now()))
 			}
 			fmt.Println("\nStopped.")
 			return nil
@@ -101,7 +101,7 @@ func runWatch(args []string) error {
 			}
 			s.Alert = alertReason(s, config)
 			printSample(os.Stdout, s)
-			path, err := recordSample(recent, alerts, s, config.incidentDir)
+			path, err := incident.RecordSample(recent, alerts, s, config.incidentDir)
 			if path != "" {
 				fmt.Println("Alert:", s.Alert)
 			}

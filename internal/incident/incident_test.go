@@ -1,18 +1,17 @@
-package main
+package incident
 
 import (
 	"os"
 	"testing"
 	"time"
 
-	"ragnaros/internal/incident"
 	"ragnaros/internal/system"
 )
 
 func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
 	dir := t.TempDir()
-	recent := incident.NewHistory(120)
-	alerts := incident.NewDetector(5)
+	recent := NewHistory(120)
+	alerts := NewDetector(5)
 	start := time.Date(2024, 9, 6, 17, 0, 0, 0, time.UTC)
 
 	// 3 calm samples, then a 10 second spike: only one file expected.
@@ -23,7 +22,7 @@ func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
 		if cpu > 90 {
 			s.Alert = "CPU high"
 		}
-		path, err := recordSample(recent, alerts, s, dir)
+		path, err := RecordSample(recent, alerts, s, dir)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -40,7 +39,7 @@ func TestRecordSampleSavesOneIncidentPerSpike(t *testing.T) {
 		t.Errorf("%d files in dir, want 1", len(entries))
 	}
 
-	samples, err := readIncident(saved[0])
+	samples, err := Read(saved[0])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +60,7 @@ func TestReadIncidentRejectsBadLine(t *testing.T) {
 	if err := os.WriteFile(path, []byte("{\"cpu_percent\": 10}\nnot json\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := readIncident(path); err == nil {
+	if _, err := Read(path); err == nil {
 		t.Error("expected an error for an invalid line")
 	}
 }

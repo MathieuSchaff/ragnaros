@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"ragnaros/internal/incident"
 	"ragnaros/internal/system"
 )
 
@@ -61,7 +62,7 @@ type incidentReport struct {
 }
 
 func runReport(path string) error {
-	samples, err := readIncident(path)
+	samples, err := incident.Read(path)
 	if err != nil {
 		return err
 	}
