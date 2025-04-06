@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"ragnaros/internal/incident"
 )
 
 const usage = `Usage:
@@ -24,7 +26,7 @@ func main() {
 		if len(os.Args) != 3 {
 			exitWithUsage()
 		}
-		err = runReport(os.Args[2])
+		err = incident.RunReport(os.Args[2])
 	default:
 		exitWithUsage()
 	}

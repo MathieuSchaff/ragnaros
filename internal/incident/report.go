@@ -1,4 +1,4 @@
-package main
+package incident
 
 import (
 	"fmt"
@@ -7,7 +7,6 @@ import (
 	"sort"
 	"time"
 
-	"ragnaros/internal/incident"
 	"ragnaros/internal/system"
 )
 
@@ -61,8 +60,8 @@ type incidentReport struct {
 	topProcesses       []processSummary
 }
 
-func runReport(path string) error {
-	samples, err := incident.Read(path)
+func RunReport(path string) error {
+	samples, err := Read(path)
 	if err != nil {
 		return err
 	}
