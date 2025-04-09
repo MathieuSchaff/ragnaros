@@ -1,59 +1,54 @@
 # Ragnaros
 
-Mon petit outil pour savoir pourquoi le PC rame.
+Petit outil perso pour comprendre pourquoi mon portable rame par moments
+(i7-12700H + RTX 3060, Linux).
 
-Il tourne en fond, garde les 2 dernières minutes en mémoire, et quand ça chauffe
-il enregistre tout dans un fichier. Ensuite `report` résume ce qui s'est passé.
+Ça tourne en fond, ça garde les 2 dernières minutes, et quand ça part en vrille
+ça écrit tout dans `incidents/`. Ensuite `report` résume le fichier.
 
-Fait pour mon portable : Intel i7-12700H + RTX 3060, Linux. Go, sans dépendance.
+Pas de dépendance, juste Go.
 
-## Lancer
+## Utilisation
 
 ```sh
-make build                           # ou : go build -o ragnaros .
-./ragnaros watch                     # Ctrl+C pour arrêter
+make build
+./ragnaros watch
 ./ragnaros report incidents/incident-20240906-212008.jsonl
 ```
 
-Options utiles de `watch` (toutes : `./ragnaros watch -h`) :
+`./ragnaros watch -h` pour toutes les options. Celles que j'utilise :
 
 ```sh
-./ragnaros watch -threshold 1 -samples 2    # déclenche tout de suite, pour tester
-./ragnaros watch -interval 500ms            # deux mesures par seconde
-./ragnaros watch -dir /tmp/ragnaros         # ailleurs que ./incidents
+./ragnaros watch -threshold 1 -samples 2   # pour tester, ça déclenche direct
+./ragnaros watch -interval 500ms
+./ragnaros watch -dir /tmp/ragnaros
 ```
 
-Simuler un programme qui sature un seul cœur (comme un jeu), sans charger la
-machine (1 cœur sur 20) :
+Pour tester l'alerte « un cœur » sans charger la machine, lancer ça dans un
+autre terminal pendant que `watch` tourne :
 
 ```sh
-./ragnaros watch                                  # terminal 1
-timeout 10 sh -c 'while :; do :; done'            # terminal 2
+timeout 10 sh -c 'while :; do :; done'
 ```
 
-Attendu : `Alert: sh uses 100 % of a core`, puis un fichier dans `incidents/`.
+Normalement ça affiche `Alert: sh uses 100 % of a core` et un fichier apparaît.
 
-## Ce qu'il mesure, chaque seconde
+## Ce qui est mesuré
 
-- CPU total, charge, mémoire libre, swap ;
-- température du CPU (capteur `coretemp`) ;
-- vitesse des cœurs : un cœur chargé loin de son max, c'est souvent la chaleur ;
-- GPU NVIDIA (utilisation, température, watts, mémoire) via `nvidia-smi`,
-  seulement s'il est déjà réveillé : l'appeler réveillerait la carte, qui
-  chaufferait le CPU ;
-- les 5 processus qui prennent le plus de CPU (100 % = un cœur entier).
+Chaque seconde : CPU, load, mémoire libre, swap, température CPU (`coretemp`),
+vitesse des cœurs, et le top 5 des process (100 % = un cœur).
 
-## Quand il enregistre
+Le GPU NVIDIA aussi, via `nvidia-smi`, mais seulement s'il est déjà réveillé.
+Sinon on le réveille et il chauffe le CPU (même caloduc).
 
-Après 5 mesures d'affilée où au moins un de ces cas est vrai :
+Une alerte part après 5 mesures d'affilée avec :
 
-- CPU total au-dessus de 90 % (`-threshold`) ;
-- un processus au-dessus de 95 % d'un cœur (`-core-threshold`) : un programme
-  qui n'utilise qu'un cœur peut ramer alors que le CPU total reste à 5 % ;
-- CPU au-dessus de 90 °C (`-temp-threshold`).
+- CPU total > 90 % (`-threshold`)
+- un process > 95 % d'un cœur (`-core-threshold`). Typiquement un jeu : il peut
+  ramer alors que le CPU total est à 5 %.
+- CPU > 90 °C (`-temp-threshold`)
 
-Un seul fichier par pic, avec la raison de l'alerte. Si on fait Ctrl+C pendant
-que ça rame, il enregistre aussi.
+Un seul fichier par pic. Ctrl+C pendant que ça rame enregistre aussi.
 
 ## Exemple
 
@@ -67,7 +62,7 @@ Ragnaros is watching. Press Ctrl+C to stop.
      2491    13.0 %   1100/3500 MHz  /usr/bin/kwin_wayland --wayland-fd 7 --socket wayland-0 -...
 ```
 
-Rapport après `timeout 8 sh -c 'while :; do :; done'` :
+Le rapport après le `timeout 8 sh -c 'while :; do :; done'` :
 
 ```
 $ ./ragnaros report incidents/incident-20240906-183339.jsonl
@@ -91,25 +86,19 @@ Busiest processes (SEEN = times in the top 5):
 This shows what was running, not proof of what caused the slowdown.
 ```
 
-## À savoir
+## Limites
 
-- Ce qui se passe avant le lancement de `watch` n'est pas connu.
-- Un programme qui reste à fond tout le temps ne donne qu'une alerte, au début.
-  Pour les lags d'après, c'est l'alerte température qui compte.
-- Une compilation déclenche aussi l'alerte « un cœur ».
-- `nvidia-smi` est lancé chaque seconde quand le GPU est réveillé : on le voit
-  parfois dans le top.
-- Les noms trop longs sont coupés à 60 caractères.
-- Pas de détail cœur par cœur : Linux déplace un programme d'un cœur à l'autre
-  plusieurs fois par seconde, donc un seul thread à 100 % apparaît comme 3 ou 4
-  cœurs à moitié occupés. Le % par processus (100 % = un cœur) et la vitesse de
-  son cœur sont plus fiables.
+- Rien avant le lancement de `watch`, évidemment.
+- Un truc qui reste à fond tout le temps donne une seule alerte, au début. Pour
+  la suite c'est la température qui compte.
+- Une compil déclenche l'alerte « un cœur », c'est normal.
+- `nvidia-smi` apparaît parfois dans le top : c'est lui qui est lancé chaque
+  seconde.
+- Les commandes sont coupées à 60 caractères.
+- Pas de détail par cœur. Linux balade les threads d'un cœur à l'autre, donc un
+  thread à 100 % ressemble à 3 ou 4 cœurs à moitié pleins. Le % par process est
+  plus fiable.
 
 ## Tests
 
-```sh
-make test                            # go vet + go test
-```
-
-Données inventées, sauf un test qui lit le vrai `/proc` une fois. Rien ne charge
-la machine.
+`make test`. Les données sont inventées, sauf un test qui lit le vrai `/proc`.
