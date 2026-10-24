@@ -1,3 +1,4 @@
+// Package system reads the state of the machine from /proc, /sys and nvidia-smi.
 package system
 
 import "time"

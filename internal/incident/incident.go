@@ -1,3 +1,4 @@
+// Package incident keeps the last samples, spots spikes and saves them to a file.
 package incident
 
 import (
